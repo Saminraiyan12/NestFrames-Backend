@@ -5,7 +5,6 @@ const http = require('http');
 const {Server} = require('socket.io');
 const {signinRouter} = require('./Routers/signinRouter.js');
 const{registerRouter} = require('./Routers/registerRouter.js');
-const {postRouter} = require('./Routers/postRouter.js');
 const {searchRouter} = require('./Routers/searchRouter.js');  
 const {userRouter} = require('./Routers/userRouter.js');
 const {messageRouter} = require('./Routers/messagesRouter.js');

@@ -34,7 +34,7 @@ const io = new Server(server,{
   }
 })
 const socketConnections = [];
-
+console.log(socketConnections);
 io.on('connection',(socket)=>{
   socket.on("registerUser",(userId)=>{
       

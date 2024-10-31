@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const signinRouter = express.Router();
 const User = require('../MongoDB/userModel');
-
+const bcrypt = require('bcryptjs');
 const findIdByUsername = async(username) =>{
   const id = await User.findOne({username:username});
   return id;
@@ -14,12 +14,14 @@ signinRouter.post('/', async(req,res,next)=>{
     id = id._id;
     const user = await User.findById(id).populate(['friendRequestsSent','friendRequestsReceived','friends']);
     const password = (await User.findById(id)).password;
-    if(userInfo.password!==password){
-      res.status(401).json({message:"Incorrect Password"})
-    }
-    else{
-      res.status(200).send(user);
-    }
+    bcrypt.compare(userInfo.password,password,function(err,result){
+      if(result){
+        res.status(200).send(user);
+      }
+      else{
+        res.status(401).json({message:"Incorrect Password"})
+      }
+    });
   }
   else{
     res.status(404).send('User not found');

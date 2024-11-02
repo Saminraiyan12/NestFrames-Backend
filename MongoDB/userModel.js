@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+  photos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Photos" }],
+  profilePic:{type:mongoose.Schema.Types.ObjectId, ref:"Photos"},
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   friendRequestsSent: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   friendRequestsReceived: [

@@ -29,7 +29,7 @@ messageRouter.get("/:userId", async (req, res, next) => {
   const { userId } = req.params;
   const userConversations = await Conversations.find({
     $or: [{ user1: userId }, { user2: userId }],
-  }).populate(["user1", "user2"]);
+  }).populate([{path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}]);
   if (userConversations) {
     res.status(200).send(userConversations);
   }
@@ -47,7 +47,7 @@ messageRouter.get(
 
       if (conversation) {
         res.status(200).send({
-          conversation: await conversation.populate(["user1", "user2"]),
+          conversation: await conversation.populate([{path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}]),
           convoExists: true,
         });
       } else {
@@ -64,7 +64,7 @@ messageRouter.get(
 messageRouter.get("/Conversation/:conversationId", async(req,res,next)=>{
   try{
     const {conversationId} = req.params;
-    const conversation = await Conversations.findById(conversationId).populate(['user1','user2']);
+    const conversation = await Conversations.findById(conversationId).populate([{path:'user1',populate:{path:'profilePic'}},{path:'user2',populate:{path:'profilePic'}}]);
     res.status(200).send(conversation);
   }
   catch(error){
@@ -91,8 +91,7 @@ messageRouter.post("/:username", async (req, res, next) => {
       .status(200)
       .send(
         await Conversations.find({ user1: senderId }).populate([
-          "user1",
-          "user2",
+          {path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}
         ])
       );
   } catch (error) {

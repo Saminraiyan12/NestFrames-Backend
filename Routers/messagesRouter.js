@@ -35,8 +35,7 @@ messageRouter.get("/:userId", async (req, res, next) => {
   }
 });
 
-messageRouter.get(
-  "/:userUsername/with/:receiverUsername",
+messageRouter.get("/:userUsername/with/:receiverUsername",
   async (req, res, next) => {
     try {
       const { userUsername, receiverUsername } = req.params;

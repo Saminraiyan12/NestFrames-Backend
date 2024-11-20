@@ -1,22 +1,5 @@
 const mongoose = require("mongoose");
-const albumSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  coverPhoto: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Photos",
-  },
-  users: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User" 
-  }],
-  photos: [{ 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Photos" 
-  }],
-});
+
 const userSchema = new mongoose.Schema({
   fullname: {
     type: String,
@@ -47,7 +30,10 @@ const userSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Photos",
     }],
-  albums: [albumSchema],
+  albums: [{
+    type: mongoose.Schema.Types.ObjectId, 
+    ref:"Albums"
+  }],
   friends: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -5,11 +5,12 @@ const http = require('http');
 
 const {Server} = require('socket.io');
 const {signinRouter} = require('./Routers/signinRouter.js');
-const{registerRouter} = require('./Routers/registerRouter.js');
+const {registerRouter} = require('./Routers/registerRouter.js');
 const {searchRouter} = require('./Routers/searchRouter.js');  
 const {photoRouter} = require('./Routers/photoRouter.js');
 const {userRouter} = require('./Routers/userRouter.js');
 const {messageRouter} = require('./Routers/messagesRouter.js');
+const {albumRouter} = require('./Routers/albumRouter.js');
 const connectDB = require('./MongoDB/db.js');
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel.js");
@@ -29,6 +30,7 @@ app.use('/search', searchRouter);
 app.use('/users', userRouter);
 app.use('/Messages',messageRouter);
 app.use('/photos', photoRouter);
+app.use('/Albums', albumRouter);
 
 const server = http.createServer(app);
 const io = new Server(server,{

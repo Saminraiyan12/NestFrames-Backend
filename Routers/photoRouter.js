@@ -32,13 +32,11 @@ async function uploadToMongo(imageMetadata, imageType){
     user.profilePic = newPhoto._id
   }
   await user.save();
-  console.log(newPhoto);
 }
 
 async function getImageUrls(userId){
   const user = await Users.findById(userId).populate("photos");
   const photos = user.photos;
-  console.log(photos)
   const photoUrls = []
   photos.forEach((photo)=>{
     photoUrls.push(photo.fileUrl)

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Albums = require("../MongoDB/albumModel");
 const Users = require("../MongoDB/userModel");
-const Photos = require('../MongoDB/photoModel');
+const Photos = require("../MongoDB/photoModel");
 const express = require("express");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
@@ -20,31 +20,15 @@ const upload = multer({
     },
   }),
 });
-async function uploadCoverToMongo(imageMetaData){
+async function uploadCoverToMongo(imageMetaData) {
   const coverPhoto = await Photos.create(imageMetaData);
   return coverPhoto._id;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 async function uploadPhotosToMongo(imagesMetadata) {
   const user = await Users.findById(imagesMetadata[0].userId);
-  const idArray = []
-  for(let i = 0;i<imagesMetadata.length;i++){
+  const idArray = [];
+  for (let i = 0; i < imagesMetadata.length; i++) {
     const newPhoto = await Photos.create(imagesMetadata[i]);
     user.photos.push(newPhoto._id);
     idArray.push(newPhoto._id);
@@ -61,33 +45,38 @@ albumRouter.post(
   ]),
   async (req, res, next) => {
     const albumInfo = req.body;
-    const {coverPhoto, photos}= req.files;
+    const { coverPhoto, photos } = req.files;
+    const user = await Users.findById(albumInfo.userId);
     const photoArray = [];
-    photos.forEach(photo => {
+    photos.forEach((photo) => {
       const photoUrl = photo.location;
       const imageMetadata = {
-        filename:photo.originalname,
-        fileUrl:photoUrl,
-        userId:albumInfo.userId, 
-        timestamp:Date.now(),
-      }
+        filename: photo.originalname,
+        fileUrl: photoUrl,
+        userId: albumInfo.userId,
+        timestamp: Date.now(),
+      };
       photoArray.push(imageMetadata);
     });
     const photoIds = await uploadPhotosToMongo(photoArray);
+    console.log(coverPhoto);
     const coverMetaData = {
-      filename:coverPhoto.filename,
-      fileUrl:coverPhoto.location,
-      userId:albumInfo.userId,
-      timestamp:Date.now()
-    }
+      filename: coverPhoto.originalname,
+      fileUrl: coverPhoto.location,
+      userId: albumInfo.userId,
+      timestamp: Date.now(),
+    };
     const coverId = await uploadCoverToMongo(coverMetaData);
     const albumData = {
       name: albumInfo.albumName,
-      users:[],
-      coverPhoto:coverId,
-      photos:photoIds
+      users: [albumInfo.userId],
+      coverPhoto: coverId,
+      photos: photoIds,
     };
-    console.log(albumData);
+    const album = await Albums.create(albumData);
+    console.log(album);
+    user.albums.push(album._id);
+    await user.save();
   }
 );
 

@@ -17,10 +17,16 @@ const addFriend = async (sender, receiver) => {
 userRouter.get('/:username', async (req, res, next) => {
   try {
     const { username } = req.params;
-    const user = await User.findOne({ username }).populate([{ path: "friendRequestsSent", populate: { path: "profilePic" } },
+    const user = await User.findOne({ username }).populate([
+      { path: "friendRequestsSent", populate: { path: "profilePic" } },
       { path: "friendRequestsReceived", populate: { path: "profilePic" } },
       { path: "friends", populate: { path: "profilePic" } },
-      "profilePic",]);
+      {
+        path: "albums",
+        populate: [{ path: "coverPhoto" }, { path: "photos" }],
+      },
+      "profilePic",
+    ]);
     res.status(200).send(user);
   } catch (error) {
     console.log(error);

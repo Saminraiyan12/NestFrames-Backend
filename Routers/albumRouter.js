@@ -21,18 +21,21 @@ const upload = multer({
   }),
 });
 async function uploadCoverToMongo(imageMetaData) {
+  const user = await Users.findById(imageMetaData.userId);
   const coverPhoto = await Photos.create(imageMetaData);
+  user.photos.push(coverPhoto._id);
   return coverPhoto._id;
 }
 
-async function uploadPhotosToMongo(imagesMetadata) {
-  const user = await Users.findById(imagesMetadata[0].userId);
+async function uploadPhotosToMongo(imagesMetaData) {
+  const user = await Users.findById(imagesMetaData[0].userId);
   const idArray = [];
-  for (let i = 0; i < imagesMetadata.length; i++) {
-    const newPhoto = await Photos.create(imagesMetadata[i]);
+  for (let i = 0; i < imagesMetaData.length; i++) {
+    const newPhoto = await Photos.create(imagesMetaData[i]);
     user.photos.push(newPhoto._id);
     idArray.push(newPhoto._id);
   }
+  
   await user.save();
   return idArray;
 }
@@ -59,10 +62,10 @@ albumRouter.post(
       photoArray.push(imageMetadata);
     });
     const photoIds = await uploadPhotosToMongo(photoArray);
-    console.log(coverPhoto);
+    const coverUrl = coverPhoto[0].location;
     const coverMetaData = {
-      filename: coverPhoto.originalname,
-      fileUrl: coverPhoto.location,
+      filename: coverPhoto[0].originalname,
+      fileUrl: coverUrl,
       userId: albumInfo.userId,
       timestamp: Date.now(),
     };
@@ -77,6 +80,7 @@ albumRouter.post(
     console.log(album);
     user.albums.push(album._id);
     await user.save();
+    res.status(201).send(album._id);
   }
 );
 

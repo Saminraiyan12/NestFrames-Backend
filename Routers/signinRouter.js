@@ -16,6 +16,10 @@ signinRouter.post("/", async (req, res, next) => {
       { path: "friendRequestsSent", populate: { path: "profilePic" } },
       { path: "friendRequestsReceived", populate: { path: "profilePic" } },
       { path: "friends", populate: { path: "profilePic" } },
+      {
+        path: "albums",
+        populate: [{ path: "coverPhoto" }, { path: "photos" }],
+      },
       "profilePic",
     ]);
     const password = (await User.findById(id)).password;

@@ -40,18 +40,20 @@ async function uploadPhotosToMongo(imagesMetaData) {
   return idArray;
 }
 albumRouter.get("/:albumId", async (req, res, next) => {
-  try{
-    const {albumId} = req.params;
-    const album = await Albums.findById(albumId).populate(["coverPhoto", {path: "users", populate:["profilePic"]}, "photos"]);
-    if(album){
-      res.status(200).send(album);
+  try {
+    const { albumId } = req.params;
+    const album = await Albums.findById(albumId).populate([
+      "coverPhoto",
+      { path: "users", populate: ["profilePic"] },
+      "photos",
+    ]);
+    if (album) {
+      res.status(200).json(album);
+    } else {
+      res.status(404).send({ message: "Album not found" });
     }
-    else{
-      res.status(404).send({error:"Album not found"})
-    }
-  }
-  catch(e){
-    res.send(e);
+  } catch (e) {
+    res.status(500).json({message:"There was an error in retreiving the album"});
   }
 });
 albumRouter.post(
@@ -61,44 +63,63 @@ albumRouter.post(
     { name: "photos", maxCount: 10 },
   ]),
   async (req, res, next) => {
-    const albumInfo = req.body;
-    const { coverPhoto, photos } = req.files;
-    const user = await Users.findById(albumInfo.userId);
-    const photoArray = [];
-    photos.forEach((photo) => {
-      const photoUrl = photo.location;
-      const imageMetadata = {
-        filename: photo.originalname,
-        fileUrl: photoUrl,
+    try {
+      const albumInfo = req.body;
+      if (!albumInfo.userId || !albumInfo.albumName) {
+        return res
+          .status(400)
+          .json({ message: "User ID and album name are required." });
+      }
+      const { coverPhoto, photos } = req.files;
+      if (!coverPhoto || coverPhoto.length === 0) {
+        return res.status(400).json({ message: "Cover photo is required." });
+      }
+      if (!photos || photos.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "At least one photo is required." });
+      }
+      const user = await Users.findById(albumInfo.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+      const photoArray = [];
+      photos.forEach((photo) => {
+        photoArray.push({
+          filename: photo.originalname,
+          fileUrl: photo.location,
+          userId: albumInfo.userId,
+          timestamp: Date.now(),
+        });
+      });
+      const photoIds = await uploadPhotosToMongo(photoArray);
+      const coverMetaData = {
+        filename: coverPhoto[0].originalname,
+        fileUrl: coverPhoto[0].location,
         userId: albumInfo.userId,
         timestamp: Date.now(),
       };
-      photoArray.push(imageMetadata);
-    });
-    const photoIds = await uploadPhotosToMongo(photoArray);
-    const coverUrl = coverPhoto[0].location;
-    const coverMetaData = {
-      filename: coverPhoto[0].originalname,
-      fileUrl: coverUrl,
-      userId: albumInfo.userId,
-      timestamp: Date.now(),
-    };
-    const coverId = await uploadCoverToMongo(coverMetaData);
-    const albumData = {
-      name: albumInfo.albumName,
-      users: [albumInfo.userId],
-      coverPhoto: coverId,
-      photos: photoIds,
-    };
-    const album = await Albums.create(albumData);
-    console.log(album);
-    user.albums.push(album._id);
-    await user.save();
-    res.status(201).send(album._id);
+      const coverId = await uploadCoverToMongo(coverMetaData);
+      const albumData = {
+        name: albumInfo.albumName,
+        users: [albumInfo.userId],
+        coverPhoto: coverId,
+        photos: photoIds,
+      };
+      const album = await Albums.create(albumData);
+      user.albums.push(album._id);
+      await user.save();
+      res.status(201).json({ albumId: album._id });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "An error occured creating the album, try again!" });
+    }
   }
 );
-albumRouter.patch("/:id/name", async(req,res,next)=>{
-  try{
+albumRouter.patch("/:id/name", async (req, res, next) => {
+  try {
     const newName = req.body.name;
     const albumId = req.params.id;
     const album = await Albums.findById(albumId);
@@ -107,19 +128,38 @@ albumRouter.patch("/:id/name", async(req,res,next)=>{
     }
     album.name = newName;
     await album.save();
-    res.status(200).json({message:"Album name updated succesfully", name:newName});
+    res
+      .status(200)
+      .json({ message: "Album name updated succesfully", name: newName });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "An error occured while updating the album name" });
+  }
+});
+albumRouter.patch("/:id/collaborators", async (req, res, next) => {
+  try{
+    const newUserIds = req.body.userIds;
+    const albumId = req.params.id;
+    const album = await Albums.findById(albumId);
+    let users = [];
+    if(!album){
+      res.status(400).json({message:"Album not found"});
+    }
+    newUserIds.forEach(async(id)=>{
+      album.users.push(id);
+      const user = await Users.findById(id).populate(["profilePic"]);
+      users.push(user);      
+    })
+    console.log(users);
+    await album.save();
+    res.status(200).json({message:"Album collaborators added succesfully",users:users});
   }
   catch(error){
     console.error(error);
-    res.status(500).json({message:"An error occured while updating the album name"});
+    res.status(500).json({message:"There was an error updating the album, try again!"});
   }
-})
-albumRouter.patch("/:id/collaborators", async(req,res,next)=>{
-  const newUserId = req.body.user;
-  const albumId = req.params.id;
-  const album = await Albums.findById(albumId);
-  album.name = newName;
-  await album.save();
-})
+});
 
 module.exports = { albumRouter };

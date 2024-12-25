@@ -6,7 +6,7 @@ searchRouter.get('/', async(req,res,next)=>{
     const {searchQuery} = req.query;
     const response = await User.find(
       {username:{$regex:RegExp(searchQuery,'i') }
-    }).limit(10);
+    }).populate(["profilePic"]).limit(10);
     if(response.length>0){
       res.status(200).send(response);
     }
@@ -18,5 +18,4 @@ searchRouter.get('/', async(req,res,next)=>{
     res.status(500).send('Server Error');
   }
 })
-
 module.exports = {searchRouter};

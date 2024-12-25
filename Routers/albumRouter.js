@@ -35,11 +35,25 @@ async function uploadPhotosToMongo(imagesMetaData) {
     user.photos.push(newPhoto._id);
     idArray.push(newPhoto._id);
   }
-  
+
   await user.save();
   return idArray;
 }
-
+albumRouter.get("/:albumId", async (req, res, next) => {
+  try{
+    const {albumId} = req.params;
+    const album = await Albums.findById(albumId).populate(["coverPhoto", {path: "users", populate:["profilePic"]}, "photos"]);
+    if(album){
+      res.status(200).send(album);
+    }
+    else{
+      res.status(404).send({error:"Album not found"})
+    }
+  }
+  catch(e){
+    res.send(e);
+  }
+});
 albumRouter.post(
   "/Create",
   upload.fields([
@@ -83,5 +97,29 @@ albumRouter.post(
     res.status(201).send(album._id);
   }
 );
+albumRouter.patch("/:id/name", async(req,res,next)=>{
+  try{
+    const newName = req.body.name;
+    const albumId = req.params.id;
+    const album = await Albums.findById(albumId);
+    if (!album) {
+      return res.status(404).json({ message: "Album not found" });
+    }
+    album.name = newName;
+    await album.save();
+    res.status(200).json({message:"Album name updated succesfully", name:newName});
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).json({message:"An error occured while updating the album name"});
+  }
+})
+albumRouter.patch("/:id/collaborators", async(req,res,next)=>{
+  const newUserId = req.body.user;
+  const albumId = req.params.id;
+  const album = await Albums.findById(albumId);
+  album.name = newName;
+  await album.save();
+})
 
 module.exports = { albumRouter };

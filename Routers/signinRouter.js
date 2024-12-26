@@ -20,7 +20,8 @@ signinRouter.post("/", async (req, res, next) => {
         path: "albums",
         populate: [{ path: "coverPhoto" }, { path: "photos" }],
       },
-      "profilePic",
+      { path: "albumRequests", populate: [{ path: "coverPhoto" },{ path: "users"}]},
+      "profilePic"
     ]);
     const password = (await User.findById(id)).password;
     bcrypt.compare(userInfo.password, password, function (err, result) {

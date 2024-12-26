@@ -25,6 +25,7 @@ userRouter.get('/:username', async (req, res, next) => {
         path: "albums",
         populate: [{ path: "coverPhoto" }, { path: "photos" }],
       },
+      { path: "albumRequests", populate: [{ path: "coverPhoto" },{ path: "users"}]},
       "profilePic",
     ]);
     res.status(200).send(user);

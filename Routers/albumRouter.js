@@ -147,19 +147,46 @@ albumRouter.patch("/:id/collaborators", async (req, res, next) => {
     if(!album){
       res.status(400).json({message:"Album not found"});
     }
-    newUserIds.forEach(async(id)=>{
+    const existingUserIds = album.users.map((user) => user.toString());
+    const duplicateIds = newUserIds.filter((id) => existingUserIds.includes(id));
+
+    if (duplicateIds.length > 0) {
+      return res.status(400).json({ message: "At least one of the selected users is already a collaborator" });
+    }
+    for (const id of newUserIds) {
       album.users.push(id);
       const user = await Users.findById(id).populate(["profilePic"]);
-      users.push(user);      
-    })
-    console.log(users);
+      user.albumRequests.push(album);
+      await user.save();
+      users.push(user);
+    }
     await album.save();
-    res.status(200).json({message:"Album collaborators added succesfully",users:users});
+    console.log(users); 
+    res.status(200).json({ message: "Album collaborators added successfully", users });
   }
   catch(error){
     console.error(error);
     res.status(500).json({message:"There was an error updating the album, try again!"});
   }
 });
+albumRouter.post("/:id/accept-request",async(req,res,next)=>{
+  try{
+    const albumId = req.params.id;
+    const {userId} = req.body;
+    console.log(req.body);
+    const user = await Users.findById(userId);
+    if(!user){
+      res.status(404).json({message:"There was an issue retrieving your account, please try again!"});
+    }
+    user.albumRequests = user.albumRequests.filter((request)=>{request._id.toString()!==albumId});
+    user.albums.push(albumId);
+    await user.save();
+    res.status(200).json({message:"Album request accepted!", albumId});
+  }
+  catch(error){
+    res.status(500).json({message:"There was an error accepting the request, try again!"})
+  }
+
+})
 
 module.exports = { albumRouter };

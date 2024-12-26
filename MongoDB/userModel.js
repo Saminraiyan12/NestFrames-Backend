@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref:"Albums"
   }],
+  albumRequests :[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"Albums"
+  }],
   friends: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

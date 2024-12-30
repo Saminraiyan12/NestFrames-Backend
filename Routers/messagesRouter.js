@@ -71,12 +71,14 @@ messageRouter.get("/Conversation/:conversationId", async(req,res,next)=>{
   }
 })
 
-messageRouter.post("/:username", async (req, res, next) => {
+messageRouter.post("/:id", async (req, res, next) => {
   try {
-    const receiverUsername = req.params;
+    const receiverId = req.params.id;
     const { senderId } = req.body;
+
     const user1 = await User.findById(senderId);
-    const user2 = await User.findOne({ username: receiverUsername.username });
+    const user2 = await User.findById(receiverId);
+
     const conversation = await Conversations.create({
       user1: user1,
       user2: user2,
@@ -86,10 +88,13 @@ messageRouter.post("/:username", async (req, res, next) => {
     user2.conversations.push(conversation._id);
     await user1.save();
     await user2.save();
+    console.log(await Conversations.findById(conversation._id).populate([
+      {path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}
+    ]));
     res
       .status(200)
       .send(
-        await Conversations.find({ user1: senderId }).populate([
+        await Conversations.findById(conversation._id).populate([
           {path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}
         ])
       );

@@ -161,7 +161,6 @@ albumRouter.patch("/:id/collaborators", async (req, res, next) => {
       users.push(user);
     }
     await album.save();
-    console.log(users); 
     res.status(200).json({ message: "Album collaborators added successfully", users });
   }
   catch(error){
@@ -183,7 +182,8 @@ albumRouter.post("/:id/accept-request",async(req,res,next)=>{
     user.albumRequests = user.albumRequests.filter((request)=> request._id.toString()!==albumId);
     user.albums.push(albumId);
     await user.save();
-    const album = await Albums.findById(albumId).populate(["coverPhoto"]);
+    const album = await Albums.findById(albumId).populate(["coverPhoto", "photos"]);
+    console.log(album)
     res.status(200).json({message:"Album request accepted!", album});
   }
   catch(error){

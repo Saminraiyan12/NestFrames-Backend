@@ -27,11 +27,13 @@ async function uploadToMongo(imageMetadata, imageType){
   const user = await Users.findById(imageMetadata.userId);
   if(imageType==='post'){
     user.photos.push(newPhoto._id);
+    await user.save();
   }
   else{
-    user.profilePic = newPhoto._id
+    user.profilePic = newPhoto._id;
+    await user.save();
+    return newPhoto;
   }
-  await user.save();
 }
 
 async function getImageUrls(userId){
@@ -73,7 +75,7 @@ photoRouter.post('/upload',upload.single('file'),(req,res,next)=>{
     res.status(200).json({message:'File uploaded',fileUrl});
   }
 });
-photoRouter.post('/uploadProfilePic',upload.single('file'),(req,res,next)=>{
+photoRouter.post('/uploadProfilePic',upload.single('file'),async(req,res,next)=>{
   const userId = req.body.userId;
   const file = req.file;
   if(!file){
@@ -87,8 +89,8 @@ photoRouter.post('/uploadProfilePic',upload.single('file'),(req,res,next)=>{
       userId:userId,
       timestamp:Date.now()
     };
-    uploadToMongo(imageMetadata,'profile');
-    res.status(200).json({message:"File uploaded",fileUrl});
+    const photo = await uploadToMongo(imageMetadata,'profile');
+    res.status(200).json({message:"File uploaded",photo});
    }
 })
 module.exports = {photoRouter};

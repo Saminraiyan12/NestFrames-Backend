@@ -44,9 +44,9 @@ userRouter.post('/:username/add', async (req, res, next) => {
     const added = await addFriend(sender, receiver);
 
     if (added) {
-      res.status(201).send(); 
+      res.status(201).send({message:"Friend request sent",receiver}); 
     } else {
-      res.status(409).send({ error: "Request Already Sent" });
+      res.status(409).send({ message: "Request Already Sent",receiver });
     }
   } catch (error) {
     res.status(500).send({ error });
@@ -57,31 +57,30 @@ userRouter.post('/:username/add', async (req, res, next) => {
 userRouter.put(`/:userId/accept-request`,async(req,res,next)=>{
   try{
     const {userId} = req.params;
-    const {username} = req.body;
+    const senderUsername = req.body.username;
     const user = await User.findById(userId);
-    const sender = await User.findOne({username});
-    const senderId = sender._id;
-    const friendRequests = user.friendRequestsReceived;
-    let err = true;
-    for(let i = 0; i < friendRequests.length;i++){
-      if(friendRequests[i].equals(senderId)){
-        user.friendRequestsReceived.splice(i, 1);
-        user.friends.push(senderId);
-        err = false;
-      }
+    const sender = await User.findOne({username:senderUsername}).populate(["profilePic"]);
+    if(!user || !sender){
+      res.status(404).send({message:"User or Sender not found, try again!"});
     }
-    for(let i = 0; i < sender.friendRequestsSent.length;i++){
-      if(sender.friendRequestsSent[i].equals(userId)){
-        sender.friendRequestsSent.splice(i,1);
-        sender.friends.push(userId);
-      }
+    user.friendRequestsReceived = user.friendRequestsReceived.filter(
+      (request) => String(request._id) !== String(sender._id)
+    );
+    sender.friendRequestsSent = sender.friendRequestsSent.filter(
+      (request) => String(request._id) !== String(user._id)
+    );
+    if(user.friends.some((friend)=>String(friend._id)===String(sender._id))){
+      await user.save();
+      await sender.save();
+      res.status(409).json({message:`${sender.fullname} is already a friend!`,sender});
     }
-    
-    if(!err){
-      await Promise.all([sender.save(),user.save()])
-      return res.status(200).send((await user.populate(['friendRequestsSent','friendRequestsReceived','friends'])));
+    else{
+      user.friends.push(sender);
+      sender.friends.push(user);
+      await user.save();
+      await sender.save();
+      res.status(200).json({message:`You are now friends with ${sender.full}!`,sender});
     }
-    res.status(409).send()
   }
   catch(error){
     console.log(error);

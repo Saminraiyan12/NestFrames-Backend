@@ -17,6 +17,12 @@ const albumSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Photos" 
   }],
+  likes:{
+    type:Number
+  },
+  views:{
+    type:Number
+  }
 });
 
 module.exports = mongoose.model('Albums', albumSchema);

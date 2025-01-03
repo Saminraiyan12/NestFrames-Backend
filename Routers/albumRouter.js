@@ -213,7 +213,6 @@ albumRouter.post("/:id/accept-request", async (req, res, next) => {
       "coverPhoto",
       "photos",
     ]);
-    console.log(album);
     res.status(200).json({ message: "Album request accepted!", album });
   } catch (error) {
     res

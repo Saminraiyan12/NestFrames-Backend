@@ -49,6 +49,7 @@ io.on('connection',(socket)=>{
     const user = await User.findById(data.sentBy);
     const receiver = await User.findOne({username:data.receivedBy});
     const conversation = await Conversations.findOne({$or:[{user1:user._id, user2:receiver._id},{user1:receiver._id,user2:user._id}]});
+    conversation.lastUpdate = Date.now();
     const message = {
       sentBy: data.sentBy,
       receivedBy: receiver._id.toString(),
@@ -58,7 +59,6 @@ io.on('connection',(socket)=>{
     const messages = conversation.messages;
     messages.push(message);
     await conversation.save();
-    console.log(messages[messages.length-1]);
     socket.emit('messageSent',messages[messages.length-1]);
     socket.broadcast.to(conversation._id.toString()).emit('messageReceived',messages[messages.length-1])
   })

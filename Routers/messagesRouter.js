@@ -5,8 +5,6 @@ const User = require("../MongoDB/userModel");
 const Conversations = require("../MongoDB/conversationModel");
 const mongoose = require('mongoose');
 async function findConversation(senderUsername, receiverUsername) {
-  console.log(senderUsername);
-  console.log(receiverUsername);
   const sender = await User.findOne({ username: senderUsername });
   const receiver = await User.findOne({ username: receiverUsername });
   if(!sender||!receiver){
@@ -29,7 +27,7 @@ messageRouter.get("/:userId", async (req, res, next) => {
   const { userId } = req.params;
   const userConversations = await Conversations.find({
     $or: [{ user1: userId }, { user2: userId }],
-  }).populate([{path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}]);
+  }).populate([{path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}]).sort({"lastUpdate":-1});
   if (userConversations) {
     res.status(200).send(userConversations);
   }
@@ -88,9 +86,6 @@ messageRouter.post("/:id", async (req, res, next) => {
     user2.conversations.push(conversation._id);
     await user1.save();
     await user2.save();
-    console.log(await Conversations.findById(conversation._id).populate([
-      {path:"user1",populate:{path:"profilePic"}}, {path:"user2",populate:{path:"profilePic"}}
-    ]));
     res
       .status(200)
       .send(
@@ -120,6 +115,7 @@ messageRouter.post("/transmission/:id", async (req, res, next) => {
         text: message,
         createdAt: Date.now(),
       });
+      conversation.lastUpdate = Date.now();
       await conversation.save();
       res.status(200).send(conversation);
     } else {

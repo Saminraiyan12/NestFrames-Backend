@@ -26,7 +26,11 @@ const conversationSchema = new mongoose.Schema({
     ref:'User',
     required:true
   },
-  messages:[messageSchema]
+  messages:[messageSchema],
+  lastUpdate:{
+    type:Date,
+    default:Date.now
+  }
 });
 
 conversationSchema.index({sender:1,receiver:1});

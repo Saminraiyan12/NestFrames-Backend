@@ -1,6 +1,7 @@
 const express = require("express");
 const userRouter = express.Router();
 const User = require("../MongoDB/userModel");
+const Conversations = require("../MongoDB/conversationModel");
 
 const addFriend = async (sender, receiver) => {
   if (sender.friendRequestsSent.includes(receiver._id)) {
@@ -97,7 +98,7 @@ userRouter.put(`/:userId/accept-request`, async (req, res, next) => {
   }
 });
 userRouter.get("/:id/suggested-friends", async (req, res, next) => {
-  try{
+  try {
     const userId = req.params.id;
     const user = await User.findById(userId);
     const suggested = await User.find({
@@ -106,7 +107,7 @@ userRouter.get("/:id/suggested-friends", async (req, res, next) => {
           userId,
           ...user.friends,
           ...user.friendRequestsReceived,
-          ...user.friendRequestsSent
+          ...user.friendRequestsSent,
         ],
       },
       friends: { $in: [...user.friends] },
@@ -114,27 +115,60 @@ userRouter.get("/:id/suggested-friends", async (req, res, next) => {
       .limit(20)
       .select("fullname profilePic username friends")
       .populate("profilePic");
-    if(!suggested){
-      res.status(404).json({message:"Suggested friends not found, try again!"});
+    if (!suggested) {
+      res
+        .status(404)
+        .json({ message: "Suggested friends not found, try again!" });
     }
-    console.log(suggested);
     const suggestedWithMutuals = suggested.map((suggestedUser) => {
       const mutualFriends = user.friends.filter((friend) =>
-        suggestedUser.friends.includes(friend._id)  
+        suggestedUser.friends.includes(friend._id)
       );
       return {
-        user:suggestedUser,
+        user: suggestedUser,
         mutualFriends: mutualFriends.length,
       };
     });
-    console.log(suggestedWithMutuals);
-    if(suggestedWithMutuals){
+    if (suggestedWithMutuals) {
       res.status(200).json(suggestedWithMutuals);
     }
-  }
-  catch(e){
-    console.error(e)
-    res.status(500).json({ message: "Error fetching suggested friends, try again!" });
+  } catch (e) {
+    console.error(e);
+    res
+      .status(500)
+      .json({ message: "Error fetching suggested friends, try again!" });
   }
 });
+userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
+  try{
+    const { userId, friendId } = req.params;
+    const user = await User.findById(userId);
+    const friend = await User.findById(friendId);
+    if (!user || !friend) {
+      return res.status(404).json({ message: "Error retrieving user, try again!" });
+    }
+    const conversation = await Conversations.findOne({
+      $and: [
+        { $or: [{ user1: user._id }, { user2: user._id }] },
+        { $or: [{ user1: friend._id }, { user2: friend._id }] },
+      ],
+    });
+    if(!conversation){
+      const newConversation = await Conversations.create({user1:user._id,user2:friend._id,messages:[]});
+      user.conversations.push(newConversation);
+      friend.conversations.push(newConversation);
+      await user.save();
+      await friend.save();
+      return res.status(201).json({newConversation,message:"New conversation created succesfully"});
+    }
+    return res.status(200).json({conversation, message:"Conversation found"});
+  }
+  catch(error){
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error fetching suggested friends, try again!" });
+  }
+});
+
 module.exports = { userRouter };

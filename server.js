@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-
+const cookieParser= require('cookie-parser');
+  const {verifyToken} = require('./Middleware/verifyToken.js');
 const {Server} = require('socket.io');
 const {signinRouter} = require('./Routers/signinRouter.js');
 const {registerRouter} = require('./Routers/registerRouter.js');
@@ -23,11 +24,12 @@ const port = 3002;
 
 const app = express();
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json())
 app.use('/Register', registerRouter);
 app.use('/Sign-in', signinRouter);
 app.use('/search', searchRouter);
-app.use('/users', userRouter);
+app.use('/users',verifyToken, userRouter);
 app.use('/Messages',messageRouter);
 app.use('/photos', photoRouter);
 app.use('/Albums', albumRouter);
@@ -38,8 +40,6 @@ const io = new Server(server,{
     origin: 'http://localhost:5173'
   }
 })
-const socketConnections = [];
-
 console.log("Poop");
 io.on('connection',(socket)=>{
   socket.on("registerUser",(userId)=>{

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Albums = require("../MongoDB/albumModel");
+const {verifyToken} = require('../Middleware/verifyToken');
 const Users = require("../MongoDB/userModel");
 const Photos = require("../MongoDB/photoModel");
 const express = require("express");
@@ -66,6 +67,7 @@ albumRouter.post(
     { name: "coverPhoto", maxCount: 1 },
     { name: "photos", maxCount: 10 },
   ]),
+  verifyToken,
   async (req, res, next) => {
     try {
       const albumInfo = req.body;
@@ -124,7 +126,7 @@ albumRouter.post(
     }
   }
 );
-albumRouter.patch("/:id/name", async (req, res, next) => {
+albumRouter.patch("/:id/name", verifyToken, async (req, res, next) => {
   try {
     const newName = req.body.name;
     const albumId = req.params.id;
@@ -144,7 +146,7 @@ albumRouter.patch("/:id/name", async (req, res, next) => {
       .json({ message: "An error occured while updating the album name" });
   }
 });
-albumRouter.patch("/:id/collaborators", async (req, res, next) => {
+albumRouter.patch("/:id/collaborators", verifyToken, async (req, res, next) => {
   try {
     const newUserIds = req.body.userIds;
     const albumId = req.params.id;
@@ -184,7 +186,7 @@ albumRouter.patch("/:id/collaborators", async (req, res, next) => {
       .json({ message: "There was an error updating the album, try again!" });
   }
 });
-albumRouter.post("/:id/accept-request", async (req, res, next) => {
+albumRouter.post("/:id/accept-request", verifyToken, async (req, res, next) => {
   try {
     const albumId = req.params.id;
     const { userId } = req.body;
@@ -222,7 +224,7 @@ albumRouter.post("/:id/accept-request", async (req, res, next) => {
       });
   }
 });
-albumRouter.post("/:id/decline-request", async (req, res, next) => {
+albumRouter.post("/:id/decline-request", verifyToken, async (req, res, next) => {
   try {
     const albumId = req.params.id;
     const { userId } = req.body;

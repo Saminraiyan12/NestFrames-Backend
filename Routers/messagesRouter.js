@@ -115,7 +115,6 @@ messageRouter.post("/transmission/:id", async (req, res, next) => {
         text: message,
         createdAt: Date.now(),
       });
-      conversation.lastUpdate = Date.now();
       await conversation.save();
       res.status(200).send(conversation);
     } else {

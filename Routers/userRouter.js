@@ -17,8 +17,9 @@ const addFriend = async (sender, receiver) => {
 
 userRouter.get("/:username", async (req, res, next) => {
   try {
+
     const { username } = req.params;
-    const user = await User.findOne({ username }).populate([
+    const user = await User.findOne({ username:username }).populate([
       { path: "friendRequestsSent", populate: { path: "profilePic" } },
       { path: "friendRequestsReceived", populate: { path: "profilePic" } },
       { path: "friends", populate: { path: "profilePic" } },
@@ -167,7 +168,7 @@ userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
     console.error(error);
     res
       .status(500)
-      .json({ message: "Error fetching suggested friends, try again!" });
+      .json({ message: "Error fetching conversation, try again!" });
   }
 });
 

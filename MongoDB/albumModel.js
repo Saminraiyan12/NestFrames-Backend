@@ -18,10 +18,12 @@ const albumSchema = new mongoose.Schema({
     ref: "Photos" 
   }],
   likes:{
-    type:Number
+    type:Number,
+    default: 0,
   },
   views:{
-    type:Number
+    type:Number,
+    default: 0,
   }
 });
 

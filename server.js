@@ -1,23 +1,24 @@
-const mongoose = require('mongoose');
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-const cookieParser= require('cookie-parser');
-  const {verifyToken} = require('./Middleware/verifyToken.js');
-const {Server} = require('socket.io');
-const {signinRouter} = require('./Routers/signinRouter.js');
-const {registerRouter} = require('./Routers/registerRouter.js');
-const {searchRouter} = require('./Routers/searchRouter.js');  
-const {photoRouter} = require('./Routers/photoRouter.js');
-const {userRouter} = require('./Routers/userRouter.js');
-const {messageRouter} = require('./Routers/messagesRouter.js');
-const {albumRouter} = require('./Routers/albumRouter.js');
-const connectDB = require('./MongoDB/db.js');
+const mongoose = require("mongoose");
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const cookieParser = require("cookie-parser");
+const { verifyToken } = require("./Middleware/verifyToken.js");
+const { Server } = require("socket.io");
+const { signinRouter } = require("./Routers/signinRouter.js");
+const { registerRouter } = require("./Routers/registerRouter.js");
+const { searchRouter } = require("./Routers/searchRouter.js");
+const { photoRouter } = require("./Routers/photoRouter.js");
+const { userRouter } = require("./Routers/userRouter.js");
+const { messageRouter } = require("./Routers/messagesRouter.js");
+const { albumRouter } = require("./Routers/albumRouter.js");
+const connectDB = require("./MongoDB/db.js");
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel.js");
+const { setupSocket } = require("./socket.js");
 const corsOptions = {
   origin: "http://localhost:5173",
-  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
 };
 const port = 3002;
@@ -25,58 +26,23 @@ const port = 3002;
 const app = express();
 app.use(cors(corsOptions));
 app.use(cookieParser());
-app.use(express.json())
-app.use('/Register', registerRouter);
-app.use('/Sign-in', signinRouter);
-app.use('/search', searchRouter);
-app.use('/users',verifyToken, userRouter);
-app.use('/Messages',messageRouter);
-app.use('/photos', photoRouter);
-app.use('/Albums', albumRouter);
+app.use(express.json());
+app.use("/Register", registerRouter);
+app.use("/Sign-in", signinRouter);
+app.use("/search", searchRouter);
+app.use("/users", verifyToken, userRouter);
+app.use("/Messages", messageRouter);
+app.use("/photos", photoRouter);
+app.use("/Albums", albumRouter);
 
 const server = http.createServer(app);
-const io = new Server(server,{
-  cors:{
-    origin: 'http://localhost:5173'
-  }
-})
+
 console.log("Poop");
-io.on('connection',(socket)=>{
-  socket.on("registerUser",(userId)=>{
-      
-  })
-  socket.on('messageSent',async(data)=>{
-    const user = await User.findById(data.sentBy);
-    const receiver = await User.findOne({username:data.receivedBy});
-    const conversation = await Conversations.findOne({$or:[{user1:user._id, user2:receiver._id},{user1:receiver._id,user2:user._id}]});
-    conversation.lastUpdate = Date.now();
-    const message = {
-      sentBy: data.sentBy,
-      receivedBy: receiver._id.toString(),
-      text: data.text,
-      createdAt: Date.now(),
-    }
-    const messages = conversation.messages;
-    messages.push(message);
-    await conversation.save();
-    socket.emit('messageSent',messages[messages.length-1]);
-    socket.broadcast.to(conversation._id.toString()).emit('messageReceived',messages[messages.length-1])
-  })
-  socket.on('joinRoom',(data)=>{
-    if(socket.rooms.size===2){
-      const extraRoom = [...socket.rooms][1];
-      socket.rooms.delete(extraRoom);
-    }
-    socket.join(data._id);
-  })
-})
 
+setupSocket(server);
 
-
-connectDB().then(()=>{
-  server.listen(port,()=>{
-    console.log(`connected to port ${port}`)
-  })
-})
-
-
+connectDB().then(() => {
+  server.listen(port, () => {
+    console.log(`connected to port ${port}`);
+  });
+});

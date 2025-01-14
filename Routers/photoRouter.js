@@ -37,11 +37,11 @@ async function uploadToMongo(imageMetadata, imageType){
 }
 
 async function getImageUrls(userId){
-  const user = await Users.findById(userId).populate("photos");
-  const photos = user.photos;
-  const photoUrls = []
-  photos.forEach((photo)=>{
-    photoUrls.push(photo.fileUrl)
+  const user = await Users.findById(userId).populate({path:"posts",populate:{path:"photo"}});
+  const posts = user.posts;
+  const photoUrls = [];
+  posts.forEach((post)=>{
+    photoUrls.push(post.photo.fileUrl);
   })
   return photoUrls;
 }

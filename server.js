@@ -14,6 +14,7 @@ const { messageRouter } = require("./Routers/messagesRouter.js");
 const { albumRouter } = require("./Routers/albumRouter.js");
 const connectDB = require("./MongoDB/db.js");
 const User = require("./MongoDB/userModel");
+const Posts = require('./MongoDB/postModel.js')
 const Conversations = require("./MongoDB/conversationModel.js");
 const { setupSocket } = require("./socket.js");
 const corsOptions = {

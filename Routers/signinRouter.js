@@ -11,9 +11,10 @@ signinRouter.post("/", async (req, res, next) => {
       { path: "friendRequestsSent", populate: { path: "profilePic" } },
       { path: "friendRequestsReceived", populate: { path: "profilePic" } },
       { path: "friends", populate: { path: "profilePic" } },
+      {path:"posts",populate:[{path:"photo"},{path:"album"}]},
       {
         path: "albums",
-        populate: [{ path: "coverPhoto" }, { path: "photos" }],
+        populate: [{ path: "coverPhoto" }, { path: "posts" }],
       },
       {
         path: "albumRequests",

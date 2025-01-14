@@ -18,18 +18,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  photos: [{
+  posts: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Photos",
+      ref: "Posts",
     }],
   profilePic: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Photos",
   },
-  taggedPhotos: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Photos",
-    }],
   albums: [{
     type: mongoose.Schema.Types.ObjectId, 
     ref:"Albums"

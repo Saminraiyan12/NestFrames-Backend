@@ -13,9 +13,9 @@ const albumSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: "User" 
   }],
-  photos: [{ 
+  posts: [{ 
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Photos" 
+    ref: "Posts" 
   }],
   likes:{
     type:Number,

@@ -21,7 +21,6 @@ const setupSocket = (server) => {
 
     socket.on("messageSent", async (data) => {
       try {
-        console.log(data);
         const user = await User.findById(data.sentBy);
         const receiver = await User.findOne({ username: data.receivedBy });
         if (!user || !receiver) {
@@ -57,7 +56,19 @@ const setupSocket = (server) => {
         socket.emit("error", { message: error.message });
       }
     });
-
+    socket.on("notification", async(data)=>{
+      try{
+        console.log(data);
+        const receiverSocket = users.get(data.receiverUsername);
+        if(receiverSocket){
+        io.to(receiverSocket).emit("notification",{success:data.success,message:data.message});
+      }
+      }
+      catch(error){
+        console.error(error);
+      }
+      
+    })
     socket.on("removeUser", (username) => {
       if (users.has(username)) {
         users.delete(username);

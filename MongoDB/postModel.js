@@ -17,6 +17,7 @@ const postSchema = new mongoose.Schema({
     type:Number,
     default:0
   },
+  timestamp:Date,
   caption:String,
   privacy:Boolean
 })

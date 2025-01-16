@@ -7,7 +7,7 @@ const {Server} = require('socket.io');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 
-const photoRouter = express.Router();
+const postRouter = express.Router();
 
 const upload = multer({
   storage: multerS3({
@@ -46,7 +46,7 @@ async function getImageUrls(userId){
   return photoUrls;
 }
 
-photoRouter.get('/:userId',async(req,res,next)=>{
+postRouter.get('/:userId',async(req,res,next)=>{
   const userId = req.params.userId;
   const photos = await getImageUrls(userId);
   if(photos){
@@ -57,7 +57,7 @@ photoRouter.get('/:userId',async(req,res,next)=>{
   }
 })
 
-photoRouter.post('/upload',upload.single('file'),(req,res,next)=>{ 
+postRouter.post('/upload',upload.single('file'),(req,res,next)=>{ 
   const userId = req.body.userId;
   const file = req.file
   if(!file){
@@ -75,7 +75,7 @@ photoRouter.post('/upload',upload.single('file'),(req,res,next)=>{
     res.status(200).json({message:'File uploaded',fileUrl});
   }
 });
-photoRouter.post('/uploadProfilePic',upload.single('file'),async(req,res,next)=>{
+postRouter.post('/uploadProfilePic',upload.single('file'),async(req,res,next)=>{
   const userId = req.body.userId;
   const file = req.file;
   if(!file){
@@ -93,6 +93,6 @@ photoRouter.post('/uploadProfilePic',upload.single('file'),async(req,res,next)=>
     res.status(200).json({message:"File uploaded",photo});
    }
 })
-module.exports = {photoRouter};
+module.exports = {postRouter};
 
 

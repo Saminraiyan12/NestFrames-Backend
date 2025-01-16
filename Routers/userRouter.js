@@ -2,7 +2,7 @@ const express = require("express");
 const userRouter = express.Router();
 const User = require("../MongoDB/userModel");
 const Conversations = require("../MongoDB/conversationModel");
-
+const Posts = require("../MongoDB/postModel");
 const addFriend = async (sender, receiver) => {
   if (sender.friendRequestsSent.includes(receiver._id)) {
     return false;
@@ -17,13 +17,12 @@ const addFriend = async (sender, receiver) => {
 
 userRouter.get("/:username", async (req, res, next) => {
   try {
-
     const { username } = req.params;
-    const user = await User.findOne({ username:username }).populate([
+    const user = await User.findOne({ username: username }).populate([
       { path: "friendRequestsSent", populate: { path: "profilePic" } },
       { path: "friendRequestsReceived", populate: { path: "profilePic" } },
       { path: "friends", populate: { path: "profilePic" } },
-      {path:"posts",populate:[{path:"photo"},{path:"album"}]},
+      { path: "posts", populate: [{ path: "photo" }, { path: "album" }] },
       {
         path: "albums",
         populate: [{ path: "coverPhoto" }, { path: "posts" }],
@@ -142,12 +141,14 @@ userRouter.get("/:id/suggested-friends", async (req, res, next) => {
   }
 });
 userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
-  try{
+  try {
     const { userId, friendId } = req.params;
     const user = await User.findById(userId);
     const friend = await User.findById(friendId);
     if (!user || !friend) {
-      return res.status(404).json({ message: "Error retrieving user, try again!" });
+      return res
+        .status(404)
+        .json({ message: "Error retrieving user, try again!" });
     }
     const conversation = await Conversations.findOne({
       $and: [
@@ -155,17 +156,25 @@ userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
         { $or: [{ user1: friend._id }, { user2: friend._id }] },
       ],
     });
-    if(!conversation){
-      const newConversation = await Conversations.create({user1:user._id,user2:friend._id,messages:[]});
+    if (!conversation) {
+      const newConversation = await Conversations.create({
+        user1: user._id,
+        user2: friend._id,
+        messages: [],
+      });
       user.conversations.push(newConversation);
       friend.conversations.push(newConversation);
       await user.save();
       await friend.save();
-      return res.status(201).json({newConversation,message:"New conversation created succesfully"});
+      return res.status(201).json({
+        newConversation,
+        message: "New conversation created succesfully",
+      });
     }
-    return res.status(200).json({conversation, message:"Conversation found"});
-  }
-  catch(error){
+    return res
+      .status(200)
+      .json({ conversation, message: "Conversation found" });
+  } catch (error) {
     console.error(error);
     res
       .status(500)
@@ -173,4 +182,41 @@ userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
   }
 });
 
+userRouter.get("/:username/getPosts", async (req, res, next) => {
+  try {
+    const { username } = req.params;
+    const { skip, limit } = req.query;
+    console.log(skip);
+    console.log(limit);
+    const user = await User.findOne({ username: username });
+    if (!user) {
+      res.status(400).json({ message: "Error retreiving user, try again!" });
+    }
+    const posts = await Posts.find({
+      $or: [{ privacy: false }, { postedBy: { $in: user.friends } }],
+    })
+      .skip(parseInt(skip))
+      .limit(parseInt(limit) + 1)
+      .populate([
+        "photo",
+        { path: "postedBy", populate: { path: "profilePic" } },
+      ])
+      .exec();
+    if (!posts) {
+      res.status(400).json({ message: "Error retreiving posts, try again!" });
+    }
+   
+    const hasMore = posts.length>limit;
+    if(hasMore){
+      posts.pop();
+    }
+    posts.forEach((post)=>{
+      console.log(post._id);
+    })
+    res.status(200).json({ posts,hasMore });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error });
+  }
+});
 module.exports = { userRouter };

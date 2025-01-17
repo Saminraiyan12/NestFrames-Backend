@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversations",
     }],
+  createdAt:{
+    type:Date,
+    default:Date.now()
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);

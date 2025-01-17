@@ -186,8 +186,6 @@ userRouter.get("/:username/getPosts", async (req, res, next) => {
   try {
     const { username } = req.params;
     const { skip, limit } = req.query;
-    console.log(skip);
-    console.log(limit);
     const user = await User.findOne({ username: username });
     if (!user) {
       res.status(400).json({ message: "Error retreiving user, try again!" });
@@ -205,18 +203,39 @@ userRouter.get("/:username/getPosts", async (req, res, next) => {
     if (!posts) {
       res.status(400).json({ message: "Error retreiving posts, try again!" });
     }
-   
-    const hasMore = posts.length>limit;
-    if(hasMore){
+
+    const hasMore = posts.length > limit;
+    if (hasMore) {
       posts.pop();
     }
-    posts.forEach((post)=>{
-      console.log(post._id);
-    })
-    res.status(200).json({ posts,hasMore });
+    res.status(200).json({ posts, hasMore });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error });
+  }
+});
+userRouter.get("/:id/findFriends", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).populate("friends", "_id");
+    if (!user) {
+      res.status(400).json({ message: "Error retrieiving user, try again!" });
+    }
+    const excludedIds = [id, ...user.friends.map((friend) => friend._id)];
+    console.log(excludedIds);
+    const friends = await User.find({
+      _id: { $nin: excludedIds },
+      createdAt:{$gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)},
+      profilePic: { $exists: true},
+    }).limit(10).sort({createdAt:-1}).populate(["profilePic"]);
+    if(!friends){
+      res.status(400).json({ message: "Error retrieiving suggested friends, try again!" });
+    }
+    console.log(friends);
+    res.status(200).json({friends:friends});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal error, try again!" });
   }
 });
 module.exports = { userRouter };

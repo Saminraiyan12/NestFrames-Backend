@@ -60,6 +60,19 @@ async function pushAlbumToUsers(userIds, albumId) {
     await user.save();
   }
 }
+albumRouter.get('/get/popular',async(req,res,next)=>{
+  try{
+    const albums = await Albums.find().sort({"views":-1}).limit(6).populate(["coverPhoto"]);
+    if(albums){
+      res.status(200).json({albums:albums});
+    }
+
+  }
+  catch(error){
+    console.error(error);
+    res.status(500).json({message:"Internal error, try again!"})
+  }
+})
 albumRouter.get("/:albumId", async (req, res, next) => {
   try {
     const { albumId } = req.params;

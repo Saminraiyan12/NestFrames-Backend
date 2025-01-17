@@ -37,6 +37,7 @@ const setupSocket = (server) => {
           receivedBy: receiver._id.toString(),
           text: data.text,
           createdAt: Date.now(),
+          read:false
         };
         conversation.lastUpdate = Date.now();
         conversation.messages.push(message);

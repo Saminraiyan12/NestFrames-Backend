@@ -1,8 +1,8 @@
-## Backend
+# Backend
 
 The backend of **NestFrames** is built with **Node.js** and **Express.js**. It utilizes **JWT (JSON Web Tokens)** for authentication and **Mongoose** to interact with **MongoDB**. The backend supports real-time messaging and notifications via **Socket.io**, and handles image uploads using **AWS S3** and **Multer**.
 
-### Features
+## Features
 
 - **Authentication**: Users authenticate using **JWTs** to securely manage user sessions.
 - **Database Models**: The backend uses **Mongoose** to manage the following schemas:
@@ -21,17 +21,15 @@ The backend of **NestFrames** is built with **Node.js** and **Express.js**. It u
 
 - **Security**: Sensitive user information such as passwords is securely stored by hashing passwords with **bcrypt**.
 
-## Authentication
+
+
+## API Endpoints
 
 All routes except public ones require a token. Use the `verifyToken` middleware to validate requests.
 
----
-
-### API Endpoints
-
 The backend exposes several RESTful API endpoints to interact with the frontend:
 
-## Endpoints
+---
 
 ### Album Routes
 

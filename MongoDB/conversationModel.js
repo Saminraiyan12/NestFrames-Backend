@@ -34,6 +34,10 @@ const conversationSchema = new mongoose.Schema({
   lastUpdate:{
     type:Date,
     default:Date.now
+  },
+  read:{
+    type:Boolean,
+    default:true
   }
 });
 

@@ -1,8 +1,8 @@
 const express = require("express");
 const userRouter = express.Router();
-const User = require("../MongoDB/userModel");
-const Conversations = require("../MongoDB/conversationModel");
-const Posts = require("../MongoDB/postModel");
+const User = require("../../MongoDB/userModel");
+const Conversations = require("../../MongoDB/conversationModel");
+const Posts = require("../../MongoDB/postModel");
 const addFriend = async (sender, receiver) => {
   if (sender.friendRequestsSent.includes(receiver._id)) {
     return false;
@@ -221,7 +221,7 @@ userRouter.get("/:id/findFriends", async (req, res, next) => {
     if (!user) {
       res.status(400).json({ message: "Error retrieiving user, try again!" });
     }
-    const excludedIds = [id, ...user.friends.map((friend) => friend._id)];
+    const excludedIds = [id, ...user.friends.map((friend) => friend._id), ...user.friendRequestsReceived.map((friend) => friend._id),...user.friendRequestsSent.map((friend) => friend._id)];
     console.log(excludedIds);
     const friends = await User.find({
       _id: { $nin: excludedIds },

@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const signinRouter = express.Router();
-const User = require("../MongoDB/userModel");
+const User = require("../../MongoDB/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 signinRouter.post("/", async (req, res, next) => {

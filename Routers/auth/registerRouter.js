@@ -1,5 +1,5 @@
 const express = require('express');
-const User = require('../MongoDB/userModel');
+const User = require('../../MongoDB/userModel');
 const registerRouter = express.Router();
 const bcrypt = require('bcryptjs')
 

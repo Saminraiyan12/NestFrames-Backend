@@ -1,8 +1,8 @@
 const express = require("express");
 const io = require("socket.io");
 const messageRouter = express.Router();
-const User = require("../MongoDB/userModel");
-const Conversations = require("../MongoDB/conversationModel");
+const User = require("../../MongoDB/userModel");
+const Conversations = require("../../MongoDB/conversationModel");
 const mongoose = require('mongoose');
 async function findConversation(senderUsername, receiverUsername) {
   const sender = await User.findOne({ username: senderUsername });

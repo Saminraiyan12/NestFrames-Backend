@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
-const Albums = require("../MongoDB/albumModel");
-const { verifyToken } = require("../Middleware/verifyToken");
-const Users = require("../MongoDB/userModel");
-const Photos = require("../MongoDB/photoModel");
-const Posts = require("../MongoDB/postModel");
+const Albums = require("../../MongoDB/albumModel");
+const { verifyToken } = require("../../Middleware/verifyToken");
+const Users = require("../../MongoDB/userModel");
+const Photos = require("../../MongoDB/photoModel");
+const Posts = require("../../MongoDB/postModel");
 const express = require("express");
 const multer = require("multer");
 const multerS3 = require("multer-s3");

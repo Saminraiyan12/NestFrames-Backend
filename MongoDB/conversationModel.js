@@ -4,11 +4,11 @@ const messageSchema = new mongoose.Schema({
   text:String,
   sentBy:{
     type:mongoose.Schema.Types.ObjectId,
-    ref:'User'
+    ref:'Users'
   },
   receivedBy:{
     type:mongoose.Schema.Types.ObjectId,
-    ref:'User'
+    ref:'Users'
   },
   read:{
     type:Boolean,
@@ -22,12 +22,12 @@ const messageSchema = new mongoose.Schema({
 const conversationSchema = new mongoose.Schema({
   user1:{
     type: mongoose.Schema.Types.ObjectId,
-    ref:'User',
+    ref:'Users',
     required:true
   },
   user2:{
     type:mongoose.Schema.Types.ObjectId,
-    ref:'User',
+    ref:'Users',
     required:true
   },
   messages:[messageSchema],

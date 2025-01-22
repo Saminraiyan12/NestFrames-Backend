@@ -3,6 +3,7 @@ const userRouter = express.Router();
 const User = require("../../MongoDB/userModel");
 const Conversations = require("../../MongoDB/conversationModel");
 const Posts = require("../../MongoDB/postModel");
+const Notifications = require("../../MongoDB/notificationModel");
 const addFriend = async (sender, receiver) => {
   if (sender.friendRequestsSent.includes(receiver._id)) {
     return false;
@@ -221,21 +222,53 @@ userRouter.get("/:id/findFriends", async (req, res, next) => {
     if (!user) {
       res.status(400).json({ message: "Error retrieiving user, try again!" });
     }
-    const excludedIds = [id, ...user.friends.map((friend) => friend._id), ...user.friendRequestsReceived.map((friend) => friend._id),...user.friendRequestsSent.map((friend) => friend._id)];
+    const excludedIds = [
+      id,
+      ...user.friends.map((friend) => friend._id),
+      ...user.friendRequestsReceived.map((friend) => friend._id),
+      ...user.friendRequestsSent.map((friend) => friend._id),
+    ];
     console.log(excludedIds);
     const friends = await User.find({
       _id: { $nin: excludedIds },
-      createdAt:{$gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)},
-      profilePic: { $exists: true},
-    }).limit(10).sort({createdAt:-1}).populate(["profilePic"]);
-    if(!friends){
-      res.status(400).json({ message: "Error retrieiving suggested friends, try again!" });
+      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      profilePic: { $exists: true },
+    })
+      .limit(10)
+      .sort({ createdAt: -1 })
+      .populate(["profilePic"]);
+    if (!friends) {
+      res
+        .status(400)
+        .json({ message: "Error retrieiving suggested friends, try again!" });
     }
     console.log(friends);
-    res.status(200).json({friends:friends});
+    res.status(200).json({ friends: friends });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal error, try again!" });
+  }
+});
+userRouter.get("/:id/getNotifications", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    const notifications = await Notifications.find({
+      receiver: id,
+      read: false,
+    }).limit(20).sort({ createdAt: -1 }).populate("sender", "username fullname profilePic");
+    if (!notifications) {
+      res
+        .status(404)
+        .json({ message: "Error getting notifications, try again!" });
+    }
+    res.status(200).json({ notifications });
+  } 
+  catch (error) {
+    console.error(error);
+    res.status(500).json({message:"Internal error, try again!"});
   }
 });
 module.exports = { userRouter };

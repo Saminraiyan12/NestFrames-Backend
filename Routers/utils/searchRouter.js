@@ -1,6 +1,6 @@
 const express = require('express');
 const searchRouter = express.Router();
-const User = require('../MongoDB/userModel');
+const User = require('../../MongoDB/userModel');
 searchRouter.get('/', async(req,res,next)=>{
   try{
     const {searchQuery} = req.query;

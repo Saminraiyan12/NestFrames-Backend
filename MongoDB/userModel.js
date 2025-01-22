@@ -36,15 +36,15 @@ const userSchema = new mongoose.Schema({
   }],
   friends: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users",
     }],
   friendRequestsSent: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users",
     }],
   friendRequestsReceived: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Users",
     }],
   conversations: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -56,4 +56,4 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = mongoose.model("Users", userSchema);

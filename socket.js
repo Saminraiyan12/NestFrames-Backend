@@ -59,7 +59,14 @@ const setupSocket = (server) => {
     });
     socket.on("notification", async(data)=>{
       try{
-        console.log(data);
+        const receiver = await User.findOne({username:data.receiverUsername});
+        const notification = {
+          receiver:receiver._id,
+          sender:data.sender,
+          createdAt:data.createdAt,
+          message:data.message
+        };
+        console.log(notification);
         const receiverSocket = users.get(data.receiverUsername);
         if(receiverSocket){
         io.to(receiverSocket).emit("notification",{success:data.success,message:data.message});

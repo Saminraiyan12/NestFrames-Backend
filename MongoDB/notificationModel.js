@@ -20,6 +20,10 @@ const notificaitonSchema = new mongoose.Schema({
   createdAt:{
     type:Date,
     default:Date.now
+  },
+  image:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Photos"
   }
 })
 

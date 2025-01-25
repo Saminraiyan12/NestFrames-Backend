@@ -1,6 +1,7 @@
 const socketIO = require("socket.io");
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel");
+const Notifications = require('./MongoDB/notificationModel');
 let io;
 const users = new Map();
 
@@ -60,17 +61,20 @@ const setupSocket = (server) => {
     socket.on("notification", async(data)=>{
       try{
         const receiver = await User.findOne({username:data.receiverUsername});
+        console.log(data.image);
         const notification = {
           receiver:receiver._id,
           sender:data.sender,
           createdAt:data.createdAt,
-          message:data.message
+          message:data.message,
+          image:data.image, 
+          read:false
         };
-        console.log(notification);
         const receiverSocket = users.get(data.receiverUsername);
         if(receiverSocket){
-        io.to(receiverSocket).emit("notification",{success:data.success,message:data.message});
-      }
+        io.to(receiverSocket).emit("notification",notification);
+        }
+        await Notifications.create(notification);
       }
       catch(error){
         console.error(error);

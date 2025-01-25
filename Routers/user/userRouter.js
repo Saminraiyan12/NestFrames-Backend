@@ -228,7 +228,6 @@ userRouter.get("/:id/findFriends", async (req, res, next) => {
       ...user.friendRequestsReceived.map((friend) => friend._id),
       ...user.friendRequestsSent.map((friend) => friend._id),
     ];
-    console.log(excludedIds);
     const friends = await User.find({
       _id: { $nin: excludedIds },
       createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
@@ -242,7 +241,6 @@ userRouter.get("/:id/findFriends", async (req, res, next) => {
         .status(400)
         .json({ message: "Error retrieiving suggested friends, try again!" });
     }
-    console.log(friends);
     res.status(200).json({ friends: friends });
   } catch (error) {
     console.error(error);

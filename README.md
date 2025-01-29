@@ -2,6 +2,43 @@
 
 The backend of **NestFrames** is built with **Node.js** and **Express.js**. It utilizes **JWT (JSON Web Tokens)** for authentication and **Mongoose** to interact with **MongoDB**. The backend supports real-time messaging and notifications via **Socket.io**, and handles image uploads using **AWS S3** and **Multer**.
 
+## Getting Started
+
+Follow these steps to set up and run the NestFrames backend locally.
+
+### Prerequisites
+Before you begin, ensure you have:
+- **Git** installed ([Download Git](https://git-scm.com/downloads))
+- **Node.js** (LTS version) installed ([Download Node.js](https://nodejs.org/))
+- A **MongoDB database** (you can use a local or cloud-based database like MongoDB Atlas)
+
+### Cloning the Repository
+To get the backend running on your local machine:
+```sh
+# Clone the backend repository
+git clone https://github.com/YOUR_GITHUB_USERNAME/NestFrames-Backend.git
+cd NestFrames-Backend
+```
+### Setting Up the Environment
+
+Before running the backend server, you'll need to configure some environment variables for the app to work properly.
+
+1. **MongoDB Database**: Make sure you have access to a MongoDB instance:
+   - Use a **local MongoDB server** (default connection string: `mongodb://localhost:27017/nestframes`)
+   - Or use **MongoDB Atlas** (cloud-based MongoDB service) by creating a database and obtaining your connection string.
+
+2. **Create the `.env` File**: In the root directory of the project, create a `.env` file with the following environment variables:
+
+- `MONGO_URI`: The URI for your MongoDB database. If you're using MongoDB Atlas, this will be the connection string provided by Atlas.
+- `JWT_SECRET`: A secret key for signing JWT tokens. You should replace `your_secret_key` with a strong and unique key.
+- `NODE_ENV`: Set to `development` for local development or `production` when deploying to production.
+- `PORT`: The port where the backend server will run. By default, it's set to `5000`, but you can change it as needed.
+
+3. **Install Dependencies**: After setting up the `.env` file, run the following command to install the project dependencies:
+
+```sh
+npm install
+```
 ## Features
 
 - **Authentication**: Users authenticate using **JWTs** to securely manage user sessions.
@@ -20,55 +57,6 @@ The backend of **NestFrames** is built with **Node.js** and **Express.js**. It u
 - **Error Handling**: Errors are caught and managed using **try-catch** blocks. Custom error messages are returned to ensure users receive clear and actionable feedback.
 
 - **Security**: Sensitive user information such as passwords is securely stored by hashing passwords with **bcrypt**.
-
-
-
-## API Endpoints
-
-All routes except public ones require a token. Use the `verifyToken` middleware to validate requests.
-
-The backend exposes several RESTful API endpoints to interact with the frontend:
-
----
-
-### Album Routes
-
-#### `GET /album/get/popular`
-Returns the top 6 popular albums sorted by views.
-
-#### `GET /album/:albumId`
-Get a specific album by its ID.
-
-#### `POST /album/Create`
-Create a new album with cover photo, photos, and posts.
-
-#### `PATCH /album/:id/name`
-Update the album name by its ID.
-
-#### `PATCH /album/:id/collaborators`
-Add new collaborators to an album.
-
-#### `POST /album/:id/accept-request`
-Accept an album collaboration request.
-
-#### `POST /album/:id/decline-request`
-Decline an album collaboration request.
-
----
-
-### Messaging Routes
-
-#### `GET /message/:userId`
-Get all conversations for a specific user by their ID.
-
-#### `GET /message/:userUsername/with/:receiverUsername`
-Get the conversation between two users.
-
-#### `GET /message/Conversation/:conversationId`
-Get a conversation by its ID.
-
-#### `POST /message/:id`
-Start a new conversation between two users.
 
 ### Real-Time Features
 

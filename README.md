@@ -16,7 +16,7 @@ Before you begin, ensure you have:
 To get the backend running on your local machine:
 ```sh
 # Clone the backend repository
-git clone https://github.com/YOUR_GITHUB_USERNAME/NestFrames-Backend.git
+git clone https://github.com/Saminraiyan12/NestFrames-Backend.git
 cd NestFrames-Backend
 ```
 ### Setting Up the Environment

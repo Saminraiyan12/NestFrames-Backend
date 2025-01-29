@@ -41,6 +41,10 @@ Before running the backend server, you'll need to configure some environment var
 ```sh
 npm install
 ```
+4. **Start the server**
+```sh
+npm run devStart
+```
 ## Features
 
 - **Authentication**: Users authenticate using **JWTs** to securely manage user sessions.

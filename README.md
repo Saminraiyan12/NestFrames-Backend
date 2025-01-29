@@ -26,13 +26,15 @@ Before running the backend server, you'll need to configure some environment var
 1. **MongoDB Database**: Make sure you have access to a MongoDB instance:
    - Use a **local MongoDB server** (default connection string: `mongodb://localhost:27017/nestframes`)
    - Or use **MongoDB Atlas** (cloud-based MongoDB service) by creating a database and obtaining your connection string.
-
-2. **Create the `.env` File**: In the root directory of the project, create a `.env` file with the following environment variables:
+2. **AWS Credentials**: To enable AWS S3 image uploads, you need to configure your AWS credentials:
+   - Create an IAM user in AWS with the appropriate permissions for S3.
+   - Obtain your **AWS Access Key ID** and **AWS Secret Access Key**.
+3. **Create the `.env` File**: In the root directory of the project, create a `.env` file with the following environment variables:
 
 - `MONGO_URI`: The URI for your MongoDB database. If you're using MongoDB Atlas, this will be the connection string provided by Atlas.
 - `JWT_SECRET`: A secret key for signing JWT tokens. You should replace `your_secret_key` with a strong and unique key.
-- `NODE_ENV`: Set to `development` for local development or `production` when deploying to production.
-- `PORT`: The port where the backend server will run. By default, it's set to `5000`, but you can change it as needed.
+- `AWS_ACCESS_KEY_ID`: Your AWS Access Key ID for accessing AWS services.
+- `AWS_SECRET_ACCESS_KEY`: Your AWS Secret Access Key for accessing AWS services.
 
 3. **Install Dependencies**: After setting up the `.env` file, run the following command to install the project dependencies:
 

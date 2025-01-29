@@ -24,6 +24,10 @@ const notificaitonSchema = new mongoose.Schema({
   image:{
     type:mongoose.Schema.Types.ObjectId,
     ref:"Photos"
+  },
+  type:{
+    type:String,
+    required:true
   }
 })
 

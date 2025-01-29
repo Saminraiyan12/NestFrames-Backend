@@ -1,7 +1,7 @@
 const socketIO = require("socket.io");
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel");
-const Notifications = require('./MongoDB/notificationModel');
+const Notifications = require("./MongoDB/notificationModel");
 let io;
 const users = new Map();
 
@@ -32,55 +32,79 @@ const setupSocket = (server) => {
             { user1: user._id, user2: receiver._id },
             { user1: receiver._id, user2: user._id },
           ],
-        }).populate([{path:'user1', populate:{path:'profilePic'}},{path:'user2',populate:{path:'profilePic'}}]);
+        }).populate([
+          { path: "user1", populate: { path: "profilePic" } },
+          { path: "user2", populate: { path: "profilePic" } },
+        ]);
         const message = {
           sentBy: data.sentBy,
           receivedBy: receiver._id.toString(),
           text: data.text,
           createdAt: Date.now(),
-          read:false
+          read: false,
         };
         conversation.lastUpdate = Date.now();
         conversation.messages.push(message);
         await conversation.save();
         if (!conversation) {
-         throw new Error("Conversation not found") 
-        };
-        
-        const receiverSocket = users.get(data.receivedBy);
-        socket.emit("messageSent", message,conversation);
-        if (receiverSocket) {
-          io.to(receiverSocket).emit("messageReceived", message,conversation);
+          throw new Error("Conversation not found");
         }
-        
+
+        const receiverSocket = users.get(data.receivedBy);
+        socket.emit("messageSent", message, conversation);
+        if (receiverSocket) {
+          io.to(receiverSocket).emit("messageReceived", message, conversation);
+        }
       } catch (error) {
         console.error("Error handling messageSent event:", error);
         socket.emit("error", { message: error.message });
       }
     });
-    socket.on("notification", async(data)=>{
-      try{
-        const receiver = await User.findOne({username:data.receiverUsername});
-        console.log(data.image);
-        const notification = {
-          receiver:receiver._id,
-          sender:data.sender,
-          createdAt:data.createdAt,
-          message:data.message,
-          image:data.image, 
-          read:false
-        };
-        const receiverSocket = users.get(data.receiverUsername);
-        if(receiverSocket){
-        io.to(receiverSocket).emit("notification",notification);
+    socket.on("read", async (data) => {
+      try {
+        const { conversation, lastMessage } = data;
+        const c = await Conversations.findById(conversation._id);
+        if (!c) {
+          throw new Error("Conversation not found");
         }
-        await Notifications.create(notification);
-      }
-      catch(error){
+        const conversationMessages = c.messages;
+        console.log(lastMessage);
+        if (
+          conversationMessages[
+            conversationMessages.length - 1
+          ]._id.toString() === lastMessage._id
+        ) {
+          c.messages[c.messages.length - 1].read = true;
+        }
+        await c.save();
+      } catch (error) {
         console.error(error);
       }
-      
-    })
+    });
+    socket.on("notification", async (data) => {
+      try {
+        const receiver = await User.findOne({
+          username: data.receiverUsername,
+        });
+        console.log(data.image);
+        const notification = {
+          receiver: receiver._id,
+          sender: data.sender,
+          createdAt: data.createdAt,
+          message: data.message,
+          image: data.image,
+          read: false,
+        };
+        const receiverSocket = users.get(data.receiverUsername);
+        if (receiverSocket) {
+          io.to(receiverSocket).emit("notification", notification);
+        }
+        await Notifications.create(notification);
+      } catch (error) {
+        console.error(error);
+      }
+    });
+
     socket.on("removeUser", (username) => {
       if (users.has(username)) {
         users.delete(username);
@@ -89,7 +113,9 @@ const setupSocket = (server) => {
     });
 
     socket.on("disconnect", () => {
-      const username = [...users.entries()].find(([key, value]) => value === socket.id)?.[0];
+      const username = [...users.entries()].find(
+        ([key, value]) => value === socket.id
+      )?.[0];
       if (username) {
         users.delete(username);
         console.log(`${username} disconnected`);

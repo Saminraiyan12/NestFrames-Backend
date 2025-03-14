@@ -4,7 +4,6 @@ const cors = require("cors");
 const http = require("http");
 const cookieParser = require("cookie-parser");
 const { verifyToken } = require("./Middleware/verifyToken.js");
-const { Server } = require("socket.io");
 const { authRouter } = require("./Routers/auth/authRouter.js");
 const { searchRouter } = require("./Routers/utils/searchRouter.js");
 const { postRouter } = require("./Routers/media/postRouter.js");
@@ -12,10 +11,8 @@ const { userRouter } = require("./Routers/user/userRouter.js");
 const { messageRouter } = require("./Routers/messages/messagesRouter.js");
 const { albumRouter } = require("./Routers/media/albumRouter.js");
 const { notificationRouter } = require('./Routers/utils/notificaionRouter.js')
+const { friendRouter } = require('./Routers/user/friendRouter.js');
 const connectDB = require("./MongoDB/db.js");
-const User = require("./MongoDB/userModel");
-const Posts = require('./MongoDB/postModel.js')
-const Conversations = require("./MongoDB/conversationModel.js");
 const { setupSocket } = require("./socket.js");
 const corsOptions = {
   origin: "http://localhost:5173",
@@ -31,9 +28,10 @@ app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/search", searchRouter);
 app.use("/users", verifyToken, userRouter);
-app.use("/Messages", messageRouter);
+app.use("/friends", friendRouter);
+app.use("/messages", messageRouter);
 app.use("/posts", postRouter);
-app.use("/Albums", albumRouter);
+app.use("/albums", albumRouter);
 app.use("/notifications", notificationRouter);
 const server = http.createServer(app);
 

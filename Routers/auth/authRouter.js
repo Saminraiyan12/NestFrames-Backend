@@ -1,10 +1,10 @@
 const express = require("express");
 const app = express();
-const signinRouter = express.Router();
+const authRouter = express.Router();
 const User = require("../../MongoDB/userModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-signinRouter.post("/", async (req, res, next) => {
+authRouter.post("/login", async (req, res, next) => {
   try {
     const userInfo = req.body;
     const user = await User.findOne({ username: userInfo.username }).populate([
@@ -52,7 +52,7 @@ signinRouter.post("/", async (req, res, next) => {
   }
 });
 
-signinRouter.post("/refresh", (req, res, next) => {
+authRouter.post("/refresh", (req, res, next) => {
   const { refreshToken } = req.cookies;
   if (!refreshToken) {
     return res.status(401).json({ message: "No refresh token found" });
@@ -71,7 +71,7 @@ signinRouter.post("/refresh", (req, res, next) => {
     res.status(200).json({ accessToken: newAccessToken });
   });
 });
-signinRouter.post('/logOut', async(req,res,next)=>{
+authRouter.post('/logOut', async(req,res,next)=>{
   res.clearCookie('refreshToken',{
     httpOnly:"true",
     sameSite:"Lax",
@@ -80,4 +80,24 @@ signinRouter.post('/logOut', async(req,res,next)=>{
   })
   res.status(200).json({message:"Logged out successfully"});
 })
-module.exports = { signinRouter };
+authRouter.post('/register',async(req,res,next)=>{
+  try{
+    const newUserInfo = req.body;
+    if(!((await User.find({username:newUserInfo.username})).length>0)){
+      const password = newUserInfo.password;
+      const newPassword = await bcrypt.hash(password,10);
+      newUserInfo.password = newPassword;
+      const user = await User.create(newUserInfo);
+      res.status(201).send(user);
+    }
+    else{
+      throw new Error('User already exists')
+    }
+  }
+  catch(error){
+    console.log(error);
+    res.status(409).send(error);
+  }
+ 
+})
+module.exports = { authRouter };

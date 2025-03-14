@@ -37,7 +37,7 @@ messageRouter.get("/:userId", async (req, res, next) => {
     res.status(200).send(userConversations);
   }
 });
-userRouter.get("/:userId/message/:friendId", async (req, res, next) => {
+messageRouter.get("/:userId/message/:friendId", async (req, res, next) => {
   try {
     const { userId, friendId } = req.params;
     const user = await User.findById(userId);

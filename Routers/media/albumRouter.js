@@ -7,6 +7,7 @@ const Posts = require("../../MongoDB/postModel");
 const express = require("express");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
+const rateLimit = require("express-rate-limit")
 const albumRouter = express.Router();
 const { S3 } = require("@aws-sdk/client-s3");
 const s3 = new S3({ region: "us-east-2" });
@@ -26,7 +27,11 @@ async function uploadCoverToMongo(imageMetaData) {
   const coverPhoto = await Photos.create(imageMetaData);
   return coverPhoto._id;
 }
-
+const likeLimiter = rateLimit({
+  windowMs: 5 * 1000, 
+  max: 5, 
+  message: { message: "Too many requests, please slow down." }
+});
 async function uploadPhotosToMongo(imagesMetaData) {
   const idArray = [];
   for (let i = 0; i < imagesMetaData.length; i++) {
@@ -60,19 +65,20 @@ async function pushAlbumToUsers(userIds, albumId) {
     await user.save();
   }
 }
-albumRouter.get('/get/popular',async(req,res,next)=>{
-  try{
-    const albums = await Albums.find().sort({"views":-1}).limit(6).populate(["coverPhoto"]);
-    if(albums){
-      res.status(200).json({albums:albums});
+albumRouter.get("/get/popular", async (req, res, next) => {
+  try {
+    const albums = await Albums.find()
+      .sort({ views: -1 })
+      .limit(6)
+      .populate(["coverPhoto"]);
+    if (albums) {
+      res.status(200).json({ albums: albums });
     }
-
-  }
-  catch(error){
+  } catch (error) {
     console.error(error);
-    res.status(500).json({message:"Internal error, try again!"})
+    res.status(500).json({ message: "Internal error, try again!" });
   }
-})
+});
 albumRouter.get("/:albumId", async (req, res, next) => {
   try {
     const { albumId } = req.params;
@@ -111,7 +117,7 @@ albumRouter.post(
       }
 
       const collaborators = await getUsers(users);
-      if (!collaborators){
+      if (!collaborators) {
         return res.status(404).json({ message: "Users not found." });
       }
       const creator = collaborators[0];
@@ -140,15 +146,17 @@ albumRouter.post(
 
       const album = await Albums.create({
         name,
-        users: collaborators,
+        users: collaborators[0],
         coverPhoto: coverId,
         posts: createdPosts,
         likes: 0,
         views: 0,
       });
-      for (let i = 0; i < collaborators.length; i++) {
+      collaborators[0].albums.push(album._id);
+      await collaborators[0].save();
+      for (let i = 1; i < collaborators.length; i++) {
         const user = collaborators[i];
-        user.albums.push(album._id);
+        user.albumRequests.push(album._id);
         await user.save();
       }
       for (let i = 0; i < createdPosts.length; i++) {
@@ -184,79 +192,77 @@ albumRouter.patch("/:id/name", verifyToken, async (req, res, next) => {
       .json({ message: "An error occured while updating the album name" });
   }
 });
-albumRouter.patch("/:id/collaborators", verifyToken, async (req, res, next) => {
-  try {
-    const newUserIds = req.body.userIds;
-    const albumId = req.params.id;
-    const album = await Albums.findById(albumId);
-    let users = [];
-    if (!album) {
-      res.status(400).json({ message: "Album not found" });
+albumRouter.patch(
+  "/:id/invite-collaborators",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const newUserIds = req.body.userIds;
+      const albumId = req.params.id;
+      const album = await Albums.findById(albumId);
+      if (!album) {
+        return res.status(400).json({ message: "Error retrieving album" });
+      }
+      for (const id of newUserIds) {
+        const user = await Users.findById(id);
+        if (
+          !user.albumRequests.includes(album._id) &&
+          !album.users.includes(user._id)
+        ) {
+          user.albumRequests.push(album);
+          await user.save();
+        }
+      }
+      res.status(200).json({ message: "Collaboration request sent!" });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "There was an error updating the album" });
     }
-    const existingUserIds = album.users.map((user) => user.toString());
-    const duplicateIds = newUserIds.filter((id) =>
-      existingUserIds.includes(id)
-    );
-
-    if (duplicateIds.length > 0) {
-      return res.status(400).json({
-        message: "At least one of the selected users is already a collaborator",
-      });
-    }
-    for (const id of newUserIds) {
-      album.users.push(id);
-      const user = await Users.findById(id).populate(["profilePic"]);
-      user.albumRequests.push(album);
+  }
+);
+albumRouter.patch(
+  "/:id/accept-invitation",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const albumId = req.params.id;
+      const { userId } = req.body;
+      const user = await Users.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          message: "There was an issue retrieving your account",
+        });
+      }
+      user.albumRequests = user.albumRequests.filter(
+        (request) => request._id.toString() !== albumId
+      );
+      if (
+        user.albums.find((album) => {
+          album._id === albumId;
+        })
+      ) {
+        await user.save();
+        return res
+          .status(400)
+          .json({ message: "User is already a collaborator!" });
+      }
+      user.albums.push(albumId);
       await user.save();
-      users.push(user);
-    }
-    await album.save();
-    res
-      .status(200)
-      .json({ message: "Album collaborators added successfully", users });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "There was an error updating the album, try again!" });
-  }
-});
-albumRouter.post("/:id/accept-request", verifyToken, async (req, res, next) => {
-  try {
-    const albumId = req.params.id;
-    const { userId } = req.body;
-    const user = await Users.findById(userId);
-    if (!user) {
-      res.status(404).json({
-        message:
-          "There was an issue retrieving your account, please try again!",
+      const album = await Albums.findById(albumId).populate(["coverPhoto"]);
+      album.users.push(user);
+      await album.save();
+      res.status(200).json({ message: "Album request accepted!", album });
+    } catch (error) {
+      res.status(500).json({
+        message: "There was an error accepting the request, try again!",
       });
     }
-    if (
-      user.albums.find((album) => {
-        album._id === albumId;
-      })
-    ) {
-      res.status(400).json({ message: "User is already a collaborator!" });
-    }
-    user.albumRequests = user.albumRequests.filter(
-      (request) => request._id.toString() !== albumId
-    );
-    user.albums.push(albumId);
-    await user.save();
-    const album = await Albums.findById(albumId).populate([
-      "coverPhoto",
-      "posts",
-    ]);
-    res.status(200).json({ message: "Album request accepted!", album });
-  } catch (error) {
-    res.status(500).json({
-      message: "There was an error accepting the request, try again!",
-    });
   }
-});
-albumRouter.post(
-  "/:id/decline-request",
+);
+albumRouter.patch(
+  "/:id/decline-invitation",
   verifyToken,
   async (req, res, next) => {
     try {
@@ -265,15 +271,14 @@ albumRouter.post(
       const user = await Users.findById(userId);
       if (!user) {
         res.status(404).json({
-          message:
-            "There was an issue retrieving your account, please try again!",
+          message: "There was an issue retrieving your account",
         });
       }
       user.albumRequests = user.albumRequests.filter(
         (request) => request._id.toString() !== albumId
       );
       await user.save();
-      res.status(200).json({ message: "Album request decline!", albumId });
+      res.status(200).json({ message: "Album request declined!", albumId });
     } catch (error) {
       res.status(500).json({
         message: "There was an error accepting the request, try again!",
@@ -282,4 +287,29 @@ albumRouter.post(
   }
 );
 
+albumRouter.patch("/:id/like", likeLimiter, verifyToken, async (req, res, next) => {
+  try {
+    const { id: albumId } = req.params;
+    const { userId } = req.body;
+    const user = await Users.findById(userId);
+    const album = await Albums.findById(albumId);
+    if (!user || !album) {
+      return res.status(404).json({ message: "Error retrieving data" });
+    }
+    if (!album.likedBy.includes(user._id)) {
+      album.likedBy.push(user._id);
+      await album.save();
+      return res.status(201).json({ message: "Succesfully liked album", user });
+    } else {
+      album.likedBy = album.likedBy.filter(
+        (liker) => liker.toString() !== user._id.toString()
+      );
+      await album.save();
+      return res.status(200).json({message:"Succesfully unliked album", user});
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal error, try again!" });
+  }
+});
 module.exports = { albumRouter };

@@ -17,9 +17,9 @@ const albumSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Posts" 
   }],
-  likes:{
-    type:Number,
-    default: 0,
+  likedBy:{
+    type:[mongoose.Schema.Types.ObjectId],
+    ref:"Users"
   },
   views:{
     type:Number,

@@ -17,10 +17,14 @@ const albumSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Posts" 
   }],
-  likedBy:{
-    type:[mongoose.Schema.Types.ObjectId],
+  requests:[{
+    type:mongoose.Schema.Types.ObjectId,
     ref:"Users"
-  },
+  }],
+  likedBy:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Users"
+  }],
   views:{
     type:Number,
     default: 0,

@@ -193,7 +193,7 @@ albumRouter.patch("/:id/name", verifyToken, async (req, res, next) => {
   }
 });
 albumRouter.patch(
-  "/:id/invite-collaborators",
+  "/:id/send-invite",
   verifyToken,
   async (req, res, next) => {
     try {
@@ -286,7 +286,7 @@ albumRouter.patch(
     }
   }
 );
-
+albumRouter.patch("/:id")
 albumRouter.patch("/:id/like", likeLimiter, verifyToken, async (req, res, next) => {
   try {
     const { id: albumId } = req.params;

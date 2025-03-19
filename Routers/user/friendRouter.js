@@ -2,12 +2,16 @@ const express = require("express");
 const friendRouter = express.Router();
 const User = require("../../MongoDB/userModel");
 const addFriend = async (sender, receiver) => {
-  if (sender.friendRequestsSent.some((req) => req.toString() === receiver._id.toString())) {
+  if (
+    sender.friendRequestsSent.some(
+      (req) => req.toString() === receiver._id.toString()
+    )
+  ) {
     return false;
   }
   sender.friendRequestsSent.push(receiver._id);
   receiver.friendRequestsReceived.push(sender._id);
-  await Promise.all([sender.save(),receiver.save()]);
+  await Promise.all([sender.save(), receiver.save()]);
   return true;
 };
 friendRouter.post("/:username/add", async (req, res, next) => {
@@ -31,13 +35,13 @@ friendRouter.post("/:username/add", async (req, res, next) => {
     res.status(500).send({ error });
   }
 });
-friendRouter.put(`/:username/accept-request`, async (req, res, next) => {
+friendRouter.patch(`/:username/accept-request`, async (req, res, next) => {
   try {
     const { username: senderUsername } = req.params;
     const { userUsername } = req.body;
     const user = await User.findOne({ username: userUsername });
     const sender = await User.findOne({ username: senderUsername }).populate([
-      "profilePic"
+      "profilePic",
     ]);
     if (!user || !sender) {
       return res
@@ -45,12 +49,16 @@ friendRouter.put(`/:username/accept-request`, async (req, res, next) => {
         .json({ message: "User or Sender not found, try again!" });
     }
     user.friendRequestsReceived = user.friendRequestsReceived.filter(
-      (request) =>  request._id.toString() !== sender._id.toString()
+      (request) => request._id.toString() !== sender._id.toString()
     );
     sender.friendRequestsSent = sender.friendRequestsSent.filter(
       (request) => request._id.toString() !== user._id.toString()
     );
-    if (user.friends.some((friend) => friend._id.toString() === sender._id.toString())) {
+    if (
+      user.friends.some(
+        (friend) => friend._id.toString() === sender._id.toString()
+      )
+    ) {
       await Promise.all([user.save(), sender.save()]);
       return res
         .status(400)
@@ -69,7 +77,7 @@ friendRouter.put(`/:username/accept-request`, async (req, res, next) => {
   }
 });
 
-friendRouter.put("/:username/ignore-request", async (req, res, next) => {
+friendRouter.patch("/:username/ignore-request", async (req, res, next) => {
   try {
     const { username } = req.params;
     const { userUsername } = req.body;
@@ -92,5 +100,35 @@ friendRouter.put("/:username/ignore-request", async (req, res, next) => {
     res.status(500).json({ message: error });
   }
 });
+
+friendRouter.delete(
+  "/:username/delete",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { username: friendUsername } = req.params;
+      const userId = req.user.id;
+      const user = await User.findById(userId);
+      const friendToBeRemoved = await User.findOne({
+        username: friendUsername,
+      });
+      if (!user || !friendToBeRemoved) {
+        return res.status(404).json({ message: "User not found!" });
+      }
+      user.friends = user.friends.filter(
+        (friend) => friend.toString() !== friendToBeRemoved._id.toString()
+      );
+      friendToBeRemoved.friends = friendToBeRemoved.friends.filter(
+        (friend) => friend.toString() !== user._id.toString()
+      );
+      await Promise.all([user.save(), friendToBeRemoved.save()]);
+      res
+        .status(200)
+        .json({ message: "Friend removed succesfully!"});
+    } catch (error) {
+      res.status(500).json({ message: "Internal error, try again!" });
+    }
+  }
+);
 
 module.exports = { friendRouter };

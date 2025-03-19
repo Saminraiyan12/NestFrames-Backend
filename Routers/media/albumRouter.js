@@ -201,7 +201,7 @@ albumRouter.patch(
       const albumId = req.params.id;
       const album = await Albums.findById(albumId);
       if (!album) {
-        return res.status(400).json({ message: "Error retrieving album" });
+        return res.status(404).json({ message: "Album not found" });
       }
       for (const id of newUserIds) {
         const user = await Users.findById(id);
@@ -211,6 +211,9 @@ albumRouter.patch(
         ) {
           user.albumRequests.push(album);
           await user.save();
+        }
+        else{
+          return res.status(400).json({message:"User is already invited!"})
         }
       }
       res.status(200).json({ message: "Collaboration request sent!" });

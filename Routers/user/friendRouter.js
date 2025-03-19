@@ -1,6 +1,7 @@
 const express = require("express");
 const friendRouter = express.Router();
 const User = require("../../MongoDB/userModel");
+const { verifyToken } = require("../../Middleware/verifyToken");
 const addFriend = async (sender, receiver) => {
   if (
     sender.friendRequestsSent.some(

@@ -26,16 +26,15 @@ authRouter.post("/login", async (req, res, next) => {
       return res.status(404).send("User not found");
     }
 
-    const id = user._id;
     const password = user.password;
     const match = await bcrypt.compare(userInfo.password, password);
     if (!match) {
       return res.status(401).json({ message: "Incorrect Password" });
     }
-    const accessToken = jwt.sign({ userId: id }, process.env.JWT_SECRET, {
+    const accessToken = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "15m",
     });
-    const refreshToken = jwt.sign({ userId: id }, process.env.JWT_SECRET, {
+    const refreshToken = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "30d",
     });
     res.cookie("refreshToken", refreshToken, {
@@ -64,7 +63,7 @@ authRouter.post("/refresh", (req, res, next) => {
         .json({ message: "Invalid or expired refresh token" });
     }
     const newAccessToken = jwt.sign(
-      { userId: decoded.userId },
+      { _id: decoded._id },
       process.env.JWT_SECRET,
       { expiresIn: "15m" }
     );

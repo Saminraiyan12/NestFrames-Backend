@@ -7,7 +7,7 @@ const Posts = require("../../MongoDB/postModel");
 const express = require("express");
 const multer = require("multer");
 const multerS3 = require("multer-s3");
-const rateLimit = require("express-rate-limit")
+const rateLimit = require("express-rate-limit");
 const albumRouter = express.Router();
 const { S3 } = require("@aws-sdk/client-s3");
 const s3 = new S3({ region: "us-east-2" });
@@ -28,9 +28,9 @@ async function uploadCoverToMongo(imageMetaData) {
   return coverPhoto._id;
 }
 const likeLimiter = rateLimit({
-  windowMs: 5 * 1000, 
-  max: 5, 
-  message: { message: "Too many requests, please slow down." }
+  windowMs: 5 * 1000,
+  max: 5,
+  message: { message: "Too many requests, please slow down." },
 });
 async function uploadPhotosToMongo(imagesMetaData) {
   const idArray = [];
@@ -192,39 +192,32 @@ albumRouter.patch("/:id/name", verifyToken, async (req, res, next) => {
       .json({ message: "An error occured while updating the album name" });
   }
 });
-albumRouter.patch(
-  "/:id/send-invite",
-  verifyToken,
-  async (req, res, next) => {
-    try {
-      const newUserIds = req.body.userIds;
-      const albumId = req.params.id;
-      const album = await Albums.findById(albumId);
-      if (!album) {
-        return res.status(404).json({ message: "Album not found" });
-      }
-      for (const id of newUserIds) {
-        const user = await Users.findById(id);
-        if (
-          !user.albumRequests.includes(album._id) &&
-          !album.users.includes(user._id)
-        ) {
-          user.albumRequests.push(album);
-          await user.save();
-        }
-        else{
-          return res.status(400).json({message:"User is already invited!"})
-        }
-      }
-      res.status(200).json({ message: "Collaboration request sent!" });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ message: "There was an error updating the album" });
+albumRouter.patch("/:id/send-invite", verifyToken, async (req, res, next) => {
+  try {
+    const newUserIds = req.body.userIds;
+    const albumId = req.params.id;
+    const album = await Albums.findById(albumId);
+    if (!album) {
+      return res.status(404).json({ message: "Album not found" });
     }
+    for (const id of newUserIds) {
+      const user = await Users.findById(id);
+      if (
+        !user.albumRequests.includes(album._id) &&
+        !album.users.includes(user._id)
+      ) {
+        user.albumRequests.push(album);
+        await user.save();
+      } else {
+        return res.status(400).json({ message: "User is already invited!" });
+      }
+    }
+    res.status(200).json({ message: "Collaboration request sent!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "There was an error updating the album" });
   }
-);
+});
 albumRouter.patch(
   "/:id/accept-invitation",
   verifyToken,
@@ -270,11 +263,11 @@ albumRouter.patch(
   async (req, res, next) => {
     try {
       const albumId = req.params.id;
-      const { userId } = req.body;
+      const userId  = req.user._id;
       const user = await Users.findById(userId);
       if (!user) {
         res.status(404).json({
-          message: "There was an issue retrieving your account",
+          message: "User not found",
         });
       }
       user.albumRequests = user.albumRequests.filter(
@@ -289,30 +282,130 @@ albumRouter.patch(
     }
   }
 );
-albumRouter.patch("/:id")
-albumRouter.patch("/:id/like", likeLimiter, verifyToken, async (req, res, next) => {
+albumRouter.patch("/:id/send-request", verifyToken, async (req, res, next) => {
   try {
+    const userId = req.user._id;
     const { id: albumId } = req.params;
-    const { userId } = req.body;
-    const user = await Users.findById(userId);
     const album = await Albums.findById(albumId);
-    if (!user || !album) {
-      return res.status(404).json({ message: "Error retrieving data" });
+    const user = await Users.findById(userId);
+    if (!album || !user) {
+      return res.status(404).json({ message: "Album not found" });
     }
-    if (!album.likedBy.includes(user._id)) {
-      album.likedBy.push(user._id);
-      await album.save();
-      return res.status(201).json({ message: "Succesfully liked album", user });
-    } else {
-      album.likedBy = album.likedBy.filter(
-        (liker) => liker.toString() !== user._id.toString()
-      );
-      await album.save();
-      return res.status(200).json({message:"Succesfully unliked album", user});
-    }
+    album.requests.push(user);
+    await album.save();
+    res.status(200).json({ message: "Collaboration request sent" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal error, try again!" });
   }
 });
+albumRouter.patch(
+  "/:id/accept-request/:userId",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { id: albumId, userId: requesterId } = req.params;
+      const userId = req.user._id;
+      const album = await Albums.findById(albumId);
+      if (!album) {
+        return res.status(404).json({ message: "Album not found!" });
+      }
+      if (!album.users.some((user) => user.toString() === userId.toString())) {
+        return res.status(403).json({ message: "Unauthorized operation" });
+      }
+      if (
+        album.users.some((user) => user.toString() === requesterId.toString())
+      ) {
+        return res.status(400).json({ message: "User already has access!" });
+      }
+      if (
+        !album.requests.some((req) => req.toString() === requesterId.toString())
+      ) {
+        return res
+          .status(400)
+          .json({ message: "User has not requested access" });
+      }
+      album.requests = album.requests.filter(
+        (request) => request.toString() !== requesterId.toString()
+      );
+      album.users.push(requesterId);
+      await album.save();
+      res.status(200).json({ message: "Collaboration request accepted!" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal error, try again!" });
+    }
+  }
+);
+albumRouter.patch(
+  "/:id/decline-request/:userId",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { id: albumId, userId: requesterId } = req.params;
+      const userId = req.user._id;
+      const album = await Albums.findById(albumId);
+      if (!album) {
+        return res.status(404).json({ message: "Album not found!" });
+      }
+      if (!album.users.some((user) => user.toString() === userId.toString())) {
+        return res.status(403).json({ message: "Unauthorized operation" });
+      }
+      if (
+        album.users.some((user) => user.toString() === requesterId.toString())
+      ) {
+        return res.status(400).json({ message: "User already has access!" });
+      }
+      if (
+        !album.requests.some((req) => req.toString() === requesterId.toString())
+      ) {
+        return res
+          .status(400)
+          .json({ message: "User has not requested access" });
+      }
+      album.requests = album.requests.filter(
+        (request) => request.toString() !== requesterId.toString()
+      );
+      await album.save();
+      res.status(200).json({ message: "Collaboration request denied!" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({message:"Internal error, try again!"});
+    }
+  }
+);
+albumRouter.patch(
+  "/:id/like",
+  likeLimiter,
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const { id: albumId } = req.params;
+      const { userId } = req.body;
+      const user = await Users.findById(userId);
+      const album = await Albums.findById(albumId);
+      if (!user || !album) {
+        return res.status(404).json({ message: "Error retrieving data" });
+      }
+      if (!album.likedBy.includes(user._id)) {
+        album.likedBy.push(user._id);
+        await album.save();
+        return res
+          .status(201)
+          .json({ message: "Succesfully liked album", user });
+      } else {
+        album.likedBy = album.likedBy.filter(
+          (liker) => liker.toString() !== user._id.toString()
+        );
+        await album.save();
+        return res
+          .status(200)
+          .json({ message: "Succesfully unliked album", user });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal error, try again!" });
+    }
+  }
+);
 module.exports = { albumRouter };

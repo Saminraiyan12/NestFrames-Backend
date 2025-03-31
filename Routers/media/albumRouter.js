@@ -58,22 +58,17 @@ async function getUsers(users) {
   return await Promise.all(userPromises);
 }
 
-async function pushAlbumToUsers(userIds, albumId) {
-  for (let i = 0; i < userIds.length; i++) {
-    const user = await Users.findById(userIds[i]);
-    user.albums.push(albumId);
-    await user.save();
-  }
-}
 albumRouter.get("/get/popular", async (req, res, next) => {
   try {
     const albums = await Albums.find()
       .sort({ views: -1 })
       .limit(6)
       .populate(["coverPhoto"]);
-    if (albums) {
-      res.status(200).json({ albums: albums });
+    if (!albums) {
+      res.status(404).json({message:"Error fetching albums"});
     }
+    res.status(200).json({ albums: albums });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal error, try again!" });
@@ -93,11 +88,11 @@ albumRouter.get("/:albumId", async (req, res, next) => {
     album.views = (album.views || 0) + 1;
     await album.save();
     res.status(200).json(album);
-  } catch (e) {
-    console.error(`Error retrieving album: ${e}`);
+  } catch (error) {
+    console.error(error);
     res
       .status(500)
-      .json({ message: "There was an error in retreiving the album" });
+      .json({ message: "Error fetching album, try again!" });
   }
 });
 albumRouter.post(
@@ -145,11 +140,10 @@ albumRouter.post(
       const createdPosts = await createPosts(postData);
 
       const album = await Albums.create({
-        name,
+        name:name,
         users: collaborators[0],
         coverPhoto: coverId,
         posts: createdPosts,
-        likes: 0,
         views: 0,
       });
       collaborators[0].albums.push(album._id);
@@ -166,7 +160,7 @@ albumRouter.post(
       }
       res.status(201).json({ albumId: album._id });
     } catch (error) {
-      console.error("Error creating album:", error);
+      console.error(error);
       res.status(500).json({ message: "Error creating album." });
     }
   }

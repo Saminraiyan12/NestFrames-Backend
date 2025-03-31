@@ -217,12 +217,18 @@ postRouter.delete("/:id/delete", verifyToken, async (req, res, next) => {
     const { id: postId } = req.params;
     const userId = req.user._id;
     const post = await Posts.findById(postId);
+    const user = await Users.findById(userId);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
+    }
+    if(!user){
+      return res.status(404).json({message:"User not found"});
     }
     if (post.postedBy.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Unauthorized operation" });
     }
+    user.posts = user.posts.filter((userPost)=>userPost.toString()!==postId.toString());
+    await user.save();
     await post.deleteOne();
     res.status(200).json({ message: "Post deleted" });
   } catch (error) {

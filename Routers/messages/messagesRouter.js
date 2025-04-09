@@ -44,65 +44,94 @@ messageRouter.get("/conversations", verifyToken, async (req, res, next) => {
     res.status(500).json({ message: "Internal error, try again!" });
   }
 });
-messageRouter.post("/message/:friendId", verifyToken, async (req, res, next) => {
-  try {
-    const userId = req.user._id;
-    const { friendId } = req.params;
-    const user = await User.findById(userId);
-    const friend = await User.findById(friendId);
-    if (!user || !friend) {
-      return res
-        .status(404)
-        .json({ message: "Error retrieving user, try again!" });
+messageRouter.post(
+  "/message/:friendId",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const userId = req.user._id;
+      const { friendId } = req.params;
+      const user = await User.findById(userId);
+      const friend = await User.findById(friendId);
+      if (!user || !friend) {
+        return res
+          .status(404)
+          .json({ message: "Error retrieving user, try again!" });
+      }
+      let conversation = await Conversations.findOne({
+        $and: [
+          { $or: [{ user1: user._id }, { user2: user._id }] },
+          { $or: [{ user1: friend._id }, { user2: friend._id }] },
+        ],
+      }).populate([
+        {
+          path: "user1",
+          select: "username fullname, profilePic",
+          populate: "profilePic",
+        },
+        {
+          path: "user2",
+          select: "username fullname, profilePic",
+          populate: "profilePic",
+        }
+      ]);
+      console.log(conversation);
+      if (!conversation) {
+        conversation = await Conversations.create({
+          user1: user._id,
+          user2: friend._id,
+        });
+        user.conversations.push(conversation);
+        friend.conversations.push(conversation);
+
+        await user.save();
+        await friend.save();
+        conversation = await conversation.populate(['user1', 'user2']);
+        console.log(conversation);
+        return res.status(201).json({
+          conversation,
+        });
+      }
+      return res.status(200).json({ conversation });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(500)
+        .json({ message: "Error fetching conversation, try again!" });
     }
-    let conversation = await Conversations.findOne({
-      $and: [
-        { $or: [{ user1: user._id }, { user2: user._id }] },
-        { $or: [{ user1: friend._id }, { user2: friend._id }] },
-      ],
-    });
-    if (!conversation) {
-      conversation = await Conversations.create({
-        user1: user._id,
-        user2: friend._id,
-        messages: [],
-      });
-      user.conversations.push(conversation);
-      friend.conversations.push(conversation);
-      await user.save();
-      await friend.save();
-      return res.status(201).json({
-        conversation,
-      });
-    }
-    return res.status(200).json({ conversation });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error fetching conversation, try again!" });
   }
-});
-messageRouter.get("/conversation/:conversationId", verifyToken, async (req, res, next) => {
-  try {
-    const userId = req.user._id.toString();
-    const { conversationId } = req.params;
-    const conversation = await Conversations.findById(conversationId).populate([
-      { path: "user1", populate: { path: "profilePic" } },
-      { path: "user2", populate: { path: "profilePic" } },
-    ]);
-    if(!(conversation.user1._id.toString() === userId || conversation.user2._id.toString() === userId)){
-      return res.status(403).json({message:"Unauthorized operation"});
+);
+messageRouter.get(
+  "/conversation/:conversationId",
+  verifyToken,
+  async (req, res, next) => {
+    try {
+      const userId = req.user._id.toString();
+      const { conversationId } = req.params;
+      const conversation = await Conversations.findById(
+        conversationId
+      ).populate([
+        { path: "user1", populate: { path: "profilePic" } },
+        { path: "user2", populate: { path: "profilePic" } },
+      ]);
+      if (
+        !(
+          conversation.user1._id.toString() === userId ||
+          conversation.user2._id.toString() === userId
+        )
+      ) {
+        return res.status(403).json({ message: "Unauthorized operation" });
+      }
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      res.status(200).json({ conversation });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Internal error, try again!" });
     }
-    if(!conversation){
-      return res.status(404).json({message:"Conversation not found"})
-    }
-    res.status(200).json({conversation});
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({message:"Internal error, try again!"});
   }
-});
+);
 
 messageRouter.post("/:id", async (req, res, next) => {
   try {
@@ -115,7 +144,6 @@ messageRouter.post("/:id", async (req, res, next) => {
     const conversation = await Conversations.create({
       user1: user1,
       user2: user2,
-      messages: [],
     });
     user1.conversations.push(conversation._id);
     user2.conversations.push(conversation._id);

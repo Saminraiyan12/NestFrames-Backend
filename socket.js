@@ -2,6 +2,7 @@ const socketIO = require("socket.io");
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel");
 const Notifications = require("./MongoDB/notificationModel");
+const Messages = require('./MongoDB/messageModel');
 let io;
 const users = new Map();
 
@@ -22,38 +23,25 @@ const setupSocket = (server) => {
 
     socket.on("messageSent", async (data) => {
       try {
-        const user = await User.findById(data.sentBy);
-        const receiver = await User.findOne({ username: data.receivedBy });
-        if (!user || !receiver) {
+        const receiver = await User.findById(data.receivedBy);
+        if (!receiver) {
           throw new Error("User or receiver not found");
         }
-        let conversation = await Conversations.findOne({
-          $or: [
-            { user1: user._id, user2: receiver._id },
-            { user1: receiver._id, user2: user._id },
-          ],
-        }).populate([
-          { path: "user1", populate: { path: "profilePic" } },
-          { path: "user2", populate: { path: "profilePic" } },
-        ]);
-        const message = {
-          sentBy: data.sentBy,
-          receivedBy: receiver._id.toString(),
-          text: data.text,
-          createdAt: Date.now(),
-          read: false,
-        };
-        conversation.lastUpdate = Date.now();
-        conversation.messages.push(message);
-        await conversation.save();
-        if (!conversation) {
-          throw new Error("Conversation not found");
+        const conversation = await Conversations.findById(data.conversation);
+        if(!conversation){
+          throw new Error("Conversation not found")
         }
-
+        console.log(data);
+       
+        const message = await Messages.create(data);
+        await Conversations.findByIdAndUpdate(conversation._id, {
+          lastUpdate: Date.now(),
+          lastMessage: message._id,
+        });
         const receiverSocket = users.get(data.receivedBy);
-        socket.emit("messageSent", message, conversation);
+        socket.emit("messageSent", message);
         if (receiverSocket) {
-          io.to(receiverSocket).emit("messageReceived", message, conversation);
+          io.to(receiverSocket).emit("messageReceived", message);
         }
       } catch (error) {
         console.error("Error handling messageSent event:", error);

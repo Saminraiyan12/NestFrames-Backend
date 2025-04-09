@@ -2,7 +2,43 @@ const express = require("express");
 const userRouter = express.Router();
 const User = require("../../MongoDB/userModel");
 const Posts = require("../../MongoDB/postModel");
-
+const { verifyToken } = require("../../Middleware/verifyToken");
+userRouter.get("/refresh", verifyToken, async (req, res, next) => {
+  try {
+    const id = req.user._id;
+    const user = await User.findById(id).populate([
+      { path: "friendRequestsSent", populate: { path: "profilePic" } },
+      { path: "friendRequestsReceived", populate: { path: "profilePic" } },
+      { path: "friends", populate: { path: "profilePic" } },
+      { path: "posts", populate: [{ path: "photo" }, { path: "album" }] },
+      {
+        path: "albums",
+        populate: [{ path: "coverPhoto" }, { path: "posts" }],
+      },
+      {
+        path: "albumRequests",
+        populate: [{ path: "coverPhoto" }, { path: "users" }],
+      },
+      "profilePic",
+      {
+        path: "conversations",
+        populate: [
+          { path: "user1", populate: { path: "profilePic" } },
+          { path: "user2", populate: { path: "profilePic" } },
+          {
+            path: "lastMessage"
+          },
+        ],
+      },
+    ]);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Internal error, try again!" });
+  }
+});
 userRouter.get("/:username", async (req, res, next) => {
   try {
     const { username } = req.params;
@@ -21,6 +57,9 @@ userRouter.get("/:username", async (req, res, next) => {
       },
       "profilePic",
     ]);
+    if (!user) {
+      res.status(404).json({ messsage: "User not found" });
+    }
     res.status(200).send(user);
   } catch (error) {
     console.log(error);

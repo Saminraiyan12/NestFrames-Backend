@@ -21,6 +21,14 @@ authRouter.post("/login", async (req, res, next) => {
         populate: [{ path: "coverPhoto" }, { path: "users" }],
       },
       "profilePic",
+      {
+        path: "conversations",
+        populate: [
+          { path: "user1", populate: { path: "profilePic" } },
+          { path: "user2", populate: { path: "profilePic" } },
+          { path: "lastMessage" }
+        ],
+      },
     ]);
     if (!user) {
       return res.status(404).send("User not found");

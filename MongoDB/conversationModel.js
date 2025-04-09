@@ -1,24 +1,4 @@
 const mongoose = require('mongoose');
-
-const messageSchema = new mongoose.Schema({
-  text:String,
-  sentBy:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:'Users'
-  },
-  receivedBy:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:'Users'
-  },
-  read:{
-    type:Boolean,
-    default:false
-  },
-  createdAt:{
-    type:Date,
-    default:Date.now
-  }
-});
 const conversationSchema = new mongoose.Schema({
   user1:{
     type: mongoose.Schema.Types.ObjectId,
@@ -30,17 +10,17 @@ const conversationSchema = new mongoose.Schema({
     ref:'Users',
     required:true
   },
-  messages:[messageSchema],
+  lastMessage:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Messages",
+    default:null
+  },
   lastUpdate:{
     type:Date,
     default:Date.now
   },
-  read:{
-    type:Boolean,
-    default:true
-  }
 });
 
-conversationSchema.index({sender:1,receiver:1});
+conversationSchema.index({user1:1,user2:1});
 
 module.exports = mongoose.model('Conversations',conversationSchema);

@@ -25,15 +25,14 @@ userRouter.get("/refresh", verifyToken, async (req, res, next) => {
         populate: [
           { path: "user1", populate: { path: "profilePic" } },
           { path: "user2", populate: { path: "profilePic" } },
-          {
-            path: "lastMessage"
-          },
+          { path: "lastMessage" },
         ],
       },
     ]);
     if (!user) {
       res.status(404).json({ message: "User not found" });
     }
+    user.conversations.sort((a, b) => b.lastUpdate - a.lastUpdate);
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: "Internal error, try again!" });

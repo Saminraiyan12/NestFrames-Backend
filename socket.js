@@ -2,7 +2,7 @@ const socketIO = require("socket.io");
 const User = require("./MongoDB/userModel");
 const Conversations = require("./MongoDB/conversationModel");
 const Notifications = require("./MongoDB/notificationModel");
-const Messages = require('./MongoDB/messageModel');
+const Messages = require("./MongoDB/messageModel");
 let io;
 const users = new Map();
 
@@ -27,21 +27,24 @@ const setupSocket = (server) => {
         if (!receiver) {
           throw new Error("User or receiver not found");
         }
-        const conversation = await Conversations.findById(data.conversation);
-        if(!conversation){
-          throw new Error("Conversation not found")
-        }
-        console.log(data);
-       
+        
         const message = await Messages.create(data);
-        await Conversations.findByIdAndUpdate(conversation._id, {
+        await Conversations.findByIdAndUpdate(data.conversation, {
           lastUpdate: Date.now(),
           lastMessage: message._id,
         });
-        const receiverSocket = users.get(data.receivedBy);
-        socket.emit("messageSent", message);
+        const updatedConversation = await Conversations.findById(data.conversation).populate([
+          { path: "user1", populate: "profilePic" },
+          { path: "user2", populate: "profilePic" },
+          { path: "lastMessage" },
+        ]);
+        if (!updatedConversation) {
+          throw new Error("Conversation not found");
+        }
+        const receiverSocket = users.get(receiver.username);
+        socket.emit("messageSent", message, updatedConversation);
         if (receiverSocket) {
-          io.to(receiverSocket).emit("messageReceived", message);
+          io.to(receiverSocket).emit("messageReceived", message, updatedConversation);
         }
       } catch (error) {
         console.error("Error handling messageSent event:", error);
@@ -50,21 +53,18 @@ const setupSocket = (server) => {
     });
     socket.on("read", async (data) => {
       try {
-        const { conversation, lastMessage } = data;
-        const c = await Conversations.findById(conversation._id);
-        if (!c) {
+        const { conversation: conversationReceived } = data;
+        const conversation = await Conversations.findById(
+          conversationReceived._id
+        );
+        const message = await Messages.findById(conversation.lastMessage._id);
+        if (!conversation) {
           throw new Error("Conversation not found");
         }
-        const conversationMessages = c.messages;
-        console.log(lastMessage);
-        if (
-          conversationMessages[
-            conversationMessages.length - 1
-          ]._id.toString() === lastMessage._id
-        ) {
-          c.messages[c.messages.length - 1].read = true;
-        }
-        await c.save();
+        conversation.lastMessage.read = true;
+        message.read = true;
+        await message.save();
+        await conversation.save();
       } catch (error) {
         console.error(error);
       }

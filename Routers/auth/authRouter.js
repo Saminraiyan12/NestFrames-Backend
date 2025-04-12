@@ -33,7 +33,7 @@ authRouter.post("/login", async (req, res, next) => {
     if (!user) {
       return res.status(404).send("User not found");
     }
-
+    user.conversations.sort((a, b) => b.lastUpdate - a.lastUpdate);
     const password = user.password;
     const match = await bcrypt.compare(userInfo.password, password);
     if (!match) {

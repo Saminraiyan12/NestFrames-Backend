@@ -3,6 +3,7 @@ const io = require("socket.io");
 const messageRouter = express.Router();
 const User = require("../../MongoDB/userModel");
 const Conversations = require("../../MongoDB/conversationModel");
+const Messages = require("../../MongoDB/messageModel");
 const mongoose = require("mongoose");
 const { verifyToken } = require("../../Middleware/verifyToken");
 async function findConversation(senderUsername, receiverUsername) {
@@ -75,7 +76,6 @@ messageRouter.post(
           populate: "profilePic",
         }
       ]);
-      console.log(conversation);
       if (!conversation) {
         conversation = await Conversations.create({
           user1: user._id,
@@ -86,8 +86,7 @@ messageRouter.post(
 
         await user.save();
         await friend.save();
-        conversation = await conversation.populate(['user1', 'user2']);
-        console.log(conversation);
+        conversation = await conversation.populate([{path:'user1',populate:"profilePic"},{path:"user2",populate:"profilePic"}]);
         return res.status(201).json({
           conversation,
         });
@@ -186,4 +185,23 @@ messageRouter.post("/transmission/:id", async (req, res, next) => {
     res.status(500).send(error);
   }
 });
+
+messageRouter.get("/:id/getMessages", verifyToken, async(req,res,next)=>{
+  try{
+    const {id:conversationId} = req.params;
+    const userId = req.user._id;
+    const conversation = await Conversations.findById(conversationId);
+    if(!conversation){
+      return res.status(404).json({message:"Conversation not found"});
+    }
+    if(!(conversation.user1.toString() === userId.toString() || conversation.user2.toString() === userId.toString())){
+      return res.status(403).json({message:"Unauthorized access"});
+    }
+    const messages = await Messages.find({conversation:conversation._id});
+    res.status(200).json(messages);
+  }
+  catch(error){
+    res.status(500).json({message:"Internal error, try again!"});
+  }
+})
 module.exports = { messageRouter };
